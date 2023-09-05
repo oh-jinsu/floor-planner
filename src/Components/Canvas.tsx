@@ -1,24 +1,14 @@
 import { FunctionComponent, useCallback, useEffect, useRef } from "react";
 import styles from "./Canvas.module.css";
-import { Vector2 } from "../Core/Vector";
 import { Observable } from "rxjs";
 import { DrawCall } from "../Core/DrawCall";
 
 export type Props = {
     resolution?: number;
     queue: Observable<DrawCall>;
-    onMouseMove?: (position: Vector2) => void;
-    onMouseUp?: (position: Vector2) => void;
-    onMouseDown?: (position: Vector2) => void;
 };
 
-const Canvas: FunctionComponent<Props> = ({
-    resolution,
-    queue,
-    onMouseMove,
-    onMouseDown,
-    onMouseUp,
-}) => {
+const Canvas: FunctionComponent<Props> = ({ resolution, queue }) => {
     const lastCall = useRef<DrawCall>();
 
     const ref = useRef<HTMLCanvasElement>(null);
@@ -65,70 +55,6 @@ const Canvas: FunctionComponent<Props> = ({
         lastCall.current?.(context);
     }, [getCanvasResolution]);
 
-    const getPosition = useCallback(
-        (e: MouseEvent, current: HTMLCanvasElement) => {
-            const canvasResolution = getCanvasResolution();
-
-            const x =
-                e.x -
-                current.offsetLeft -
-                (current.width * 0.5) / canvasResolution;
-
-            const y =
-                e.y -
-                current.offsetTop -
-                (current.height * 0.5) / canvasResolution;
-
-            return { x, y };
-        },
-        [getCanvasResolution]
-    );
-
-    const mouseMove = useCallback(
-        (e: MouseEvent) => {
-            const context = getContext();
-
-            if (!context) {
-                return;
-            }
-
-            const position = getPosition(e, context.canvas);
-
-            onMouseMove?.(position);
-        },
-        [getPosition, onMouseMove]
-    );
-
-    const mouseDown = useCallback(
-        (e: MouseEvent) => {
-            const context = getContext();
-
-            if (!context) {
-                return;
-            }
-
-            const position = getPosition(e, context.canvas);
-
-            onMouseDown?.(position);
-        },
-        [getPosition, onMouseDown]
-    );
-
-    const mouseUp = useCallback(
-        (e: MouseEvent) => {
-            const context = getContext();
-
-            if (!context) {
-                return;
-            }
-
-            const position = getPosition(e, context.canvas);
-
-            onMouseUp?.(position);
-        },
-        [getPosition, onMouseUp]
-    );
-
     const onNext = useCallback((drawCall: DrawCall) => {
         const context = getContext()!;
 
@@ -142,26 +68,14 @@ const Canvas: FunctionComponent<Props> = ({
 
         resize();
 
-        window.addEventListener("mousemove", mouseMove);
-
-        window.addEventListener("mousedown", mouseDown);
-
-        window.addEventListener("mouseup", mouseUp);
-
         const subscription = queue.subscribe(onNext);
 
         return () => {
             subscription.unsubscribe();
 
             window.removeEventListener("resize", resize, false);
-
-            window.removeEventListener("mousemove", mouseMove);
-
-            window.removeEventListener("mousedown", mouseDown);
-
-            window.removeEventListener("mouseup", mouseUp);
         };
-    }, [resize, queue, onNext, mouseMove, mouseDown, mouseUp]);
+    }, [resize, queue, onNext]);
 
     return <canvas className={styles.canvas} ref={ref} />;
 };
