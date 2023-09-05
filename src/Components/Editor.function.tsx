@@ -11,12 +11,14 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
         context.moveTo(x, context.canvas.width * -0.5);
 
         context.lineTo(x, context.canvas.width * 0.5);
-    }
 
-    for (let x = METER; x > fullWidth * -0.5; x -= METER) {
-        context.moveTo(x, context.canvas.width * -0.5);
+        if (x === 0) {
+            continue;
+        }
 
-        context.lineTo(x, context.canvas.width * 0.5);
+        context.moveTo(-x, context.canvas.width * -0.5);
+
+        context.lineTo(-x, context.canvas.width * 0.5);
     }
 
     const fullHeight = Math.round(context.canvas.height / METER) * METER;
@@ -25,17 +27,27 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
         context.moveTo(context.canvas.height * -0.5, y);
 
         context.lineTo(context.canvas.height * 0.5, y);
+
+        if (y === 0) {
+            continue;
+        }
+
+        context.moveTo(context.canvas.height * -0.5, -y);
+
+        context.lineTo(context.canvas.height * 0.5, -y);
     }
 
-    for (let y = METER; y > fullHeight * -0.5; y -= METER) {
-        context.moveTo(context.canvas.height * -0.5, y);
+    context.strokeBy("#eee");
+};
 
-        context.lineTo(context.canvas.height * 0.5, y);
-    }
+const drawHolder = (context: CanvasRenderingContext2D, { x, y }: Vector2) => {
+    context.beginPath();
 
-    context.strokeStyle = "#eee";
+    context.arc(x, y, HANDLE_RADIUS, 0, Math.PI * 2);
 
-    context.stroke();
+    context.fillBy("#777");
+
+    context.closePath();
 };
 
 const drawHolders = (
@@ -43,17 +55,7 @@ const drawHolders = (
     vertices: Vector2[]
 ) => {
     for (let i = 0; i < vertices.length; i++) {
-        const { x, y } = vertices[i];
-
-        context.beginPath();
-
-        context.arc(x, y, HANDLE_RADIUS, 0, Math.PI * 2);
-
-        context.fillStyle = "#777";
-
-        context.fill();
-
-        context.closePath();
+        drawHolder(context, vertices[i]);
     }
 };
 
@@ -79,62 +81,67 @@ const drawWalls = (context: CanvasRenderingContext2D, vertices: Vector2[]) => {
     context.closePath();
 };
 
+const drawLength = (
+    context: CanvasRenderingContext2D,
+    { x: x1, y: y1 }: Vector2,
+    { x: x2, y: y2 }: Vector2
+) => {
+    context.beginPath();
+
+    const theta = Math.atan2(y2 - y1, x2 - x1);
+
+    const dx = Math.cos(theta - Math.PI * 0.5) * 0.5 * METER;
+
+    const dy = Math.sin(theta - Math.PI * 0.5) * 0.5 * METER;
+
+    context.moveTo(x1 + dx, y1 + dy);
+
+    context.lineTo(x2 + dx, y2 + dy);
+
+    const adx = Math.cos(theta - Math.PI * 0.5) * 7;
+
+    const ady = Math.sin(theta - Math.PI * 0.5) * 7;
+
+    context.moveTo(x1 + dx - adx, y1 + dy - ady);
+
+    context.lineTo(x1 + dx + adx, y1 + dy + ady);
+
+    context.moveTo(x2 + dx - adx, y2 + dy - ady);
+
+    context.lineTo(x2 + dx + adx, y2 + dy + ady);
+
+    context.strokeBy("#bfbfbf", 1);
+
+    context.closePath();
+
+    const mx = (x1 + x2 + 2 * dx) / 2;
+
+    const my = (y1 + y2 + 2 * dy) / 2;
+
+    context.setTextStyle("15px serif", "#111", "center", "middle");
+
+    const d = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+
+    const length = Math.round((d * 1000) / METER);
+
+    context.fillText(`${length}`, mx, my);
+};
+
 const drawLengths = (
     context: CanvasRenderingContext2D,
     vertices: Vector2[]
 ) => {
     for (let i = 0; i < vertices.length; i++) {
-        context.beginPath();
+        const v1 = vertices.at(i - 1)!;
 
-        const { x: x1, y: y1 } = vertices.at(i - 1)!;
+        const v2 = vertices.at(i)!;
 
-        const { x: x2, y: y2 } = vertices.at(i)!;
-
-        const theta = Math.atan2(y2 - y1, x2 - x1);
-
-        const dx = Math.cos(theta - Math.PI * 0.5) * 0.5 * METER;
-
-        const dy = Math.sin(theta - Math.PI * 0.5) * 0.5 * METER;
-
-        context.moveTo(x1 + dx, y1 + dy);
-
-        context.lineTo(x2 + dx, y2 + dy);
-
-        const adx = Math.cos(theta - Math.PI * 0.5) * 7;
-
-        const ady = Math.sin(theta - Math.PI * 0.5) * 7;
-
-        context.moveTo(x1 + dx - adx, y1 + dy - ady);
-
-        context.lineTo(x1 + dx + adx, y1 + dy + ady);
-
-        context.moveTo(x2 + dx - adx, y2 + dy - ady);
-
-        context.lineTo(x2 + dx + adx, y2 + dy + ady);
-
-        context.strokeBy("#bfbfbf", 1);
-
-        context.closePath();
-
-        const mx = (x1 + x2 + 2 * dx) / 2;
-
-        const my = (y1 + y2 + 2 * dy) / 2;
-
-        context.setTextStyle("15px serif", "#111", "center", "middle");
-
-        const direction = Math.pow(
-            Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2),
-            0.5
-        );
-
-        const length = Math.round((direction * 1000) / METER);
-
-        context.fillText(`${length}`, mx, my);
+        drawLength(context, v1, v2);
     }
 };
 
-export const toDrawCall =
-    (state: State) => (context: CanvasRenderingContext2D) => {
+export const toDrawCall = (state: State) => {
+    return (context: CanvasRenderingContext2D) => {
         context.clearScreen();
 
         drawGrid(context);
@@ -147,3 +154,4 @@ export const toDrawCall =
 
         drawLengths(context, vertices);
     };
+};
