@@ -1,5 +1,7 @@
 import styles from "./App.module.css";
 import Editor from "./Components/Editor";
+import "./Extensions/Canvas";
+import "./Extensions/Array";
 
 const App = () => {
     return (

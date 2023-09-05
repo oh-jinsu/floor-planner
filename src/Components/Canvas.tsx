@@ -1,10 +1,12 @@
 import { FunctionComponent, useCallback, useEffect, useRef } from "react";
 import styles from "./Canvas.module.css";
 import { Vector2 } from "../Core/Vector";
+import { Observable } from "rxjs";
+import { DrawCall } from "../Core/DrawCall";
 
 export type Props = {
     resolution?: number;
-    draw: (context: CanvasRenderingContext2D) => void;
+    queue: Observable<DrawCall>;
     onMouseMove?: (position: Vector2) => void;
     onMouseUp?: (position: Vector2) => void;
     onMouseDown?: (position: Vector2) => void;
@@ -12,11 +14,13 @@ export type Props = {
 
 const Canvas: FunctionComponent<Props> = ({
     resolution,
-    draw,
+    queue,
     onMouseMove,
     onMouseDown,
     onMouseUp,
 }) => {
+    const lastCall = useRef<DrawCall>();
+
     const ref = useRef<HTMLCanvasElement>(null);
 
     const getContext = () => {
@@ -58,8 +62,8 @@ const Canvas: FunctionComponent<Props> = ({
 
         context.clearRect(0, 0, current.width, current.height);
 
-        draw(context);
-    }, [getCanvasResolution, draw]);
+        lastCall.current?.(context);
+    }, [getCanvasResolution]);
 
     const getPosition = useCallback(
         (e: MouseEvent, current: HTMLCanvasElement) => {
@@ -125,6 +129,14 @@ const Canvas: FunctionComponent<Props> = ({
         [getPosition, onMouseUp]
     );
 
+    const onNext = useCallback((drawCall: DrawCall) => {
+        const context = getContext()!;
+
+        lastCall.current = drawCall;
+
+        drawCall(context);
+    }, []);
+
     useEffect(() => {
         window.addEventListener("resize", resize, false);
 
@@ -136,7 +148,11 @@ const Canvas: FunctionComponent<Props> = ({
 
         window.addEventListener("mouseup", mouseUp);
 
+        const subscription = queue.subscribe(onNext);
+
         return () => {
+            subscription.unsubscribe();
+
             window.removeEventListener("resize", resize, false);
 
             window.removeEventListener("mousemove", mouseMove);
@@ -145,7 +161,7 @@ const Canvas: FunctionComponent<Props> = ({
 
             window.removeEventListener("mouseup", mouseUp);
         };
-    }, [resize, draw, mouseMove, mouseDown, mouseUp]);
+    }, [resize, queue, onNext, mouseMove, mouseDown, mouseUp]);
 
     return <canvas className={styles.canvas} ref={ref} />;
 };
