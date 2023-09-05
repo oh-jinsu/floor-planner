@@ -5,15 +5,9 @@ import { Vector2 } from "../Core/Vector";
 export type Props = {
     resolution?: number;
     draw: (context: CanvasRenderingContext2D) => void;
-    onMouseMove?: (
-        context: CanvasRenderingContext2D,
-        position: Vector2
-    ) => void;
-    onMouseUp?: (context: CanvasRenderingContext2D, position: Vector2) => void;
-    onMouseDown?: (
-        context: CanvasRenderingContext2D,
-        position: Vector2
-    ) => void;
+    onMouseMove?: (position: Vector2) => void;
+    onMouseUp?: (position: Vector2) => void;
+    onMouseDown?: (position: Vector2) => void;
 };
 
 const Canvas: FunctionComponent<Props> = ({
@@ -96,7 +90,7 @@ const Canvas: FunctionComponent<Props> = ({
 
             const position = getPosition(e, context.canvas);
 
-            onMouseMove?.(context, position);
+            onMouseMove?.(position);
         },
         [getPosition, onMouseMove]
     );
@@ -111,7 +105,7 @@ const Canvas: FunctionComponent<Props> = ({
 
             const position = getPosition(e, context.canvas);
 
-            onMouseDown?.(context, position);
+            onMouseDown?.(position);
         },
         [getPosition, onMouseDown]
     );
@@ -126,7 +120,7 @@ const Canvas: FunctionComponent<Props> = ({
 
             const position = getPosition(e, context.canvas);
 
-            onMouseUp?.(context, position);
+            onMouseUp?.(position);
         },
         [getPosition, onMouseUp]
     );

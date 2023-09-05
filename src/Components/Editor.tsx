@@ -1,38 +1,31 @@
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Vector2 } from "../Core/Vector";
 import Canvas from "./Canvas";
-import { METER } from "../Core/Meter";
 import { MouseState } from "../Core/MouseState";
 import "../Extensions/Canvas";
 import "../Extensions/Array";
-import { HANDLE_RADIUS } from "../Constants/Editor";
+import { METER, HANDLE_RADIUS, INITIAL_VERTICES } from "../Constants/Editor";
+import { State } from "../Core/State";
+import { deepCopy } from "../Functions/Object";
+import styles from "./Editor.module.css";
 
 const Editor = () => {
-    const mouseStateRef = useRef<MouseState>({
+    const refContext = useRef<CanvasRenderingContext2D>();
+
+    const refMouseState = useRef<MouseState>({
+        timestamp: 0,
+        updated: false,
         origin: { x: 0, y: 0 },
         isDragging: false,
     });
 
-    const verticesRef = useRef<Vector2[]>([
-        {
-            x: -5 * METER,
-            y: -3 * METER,
-        },
-        {
-            x: 5 * METER,
-            y: -3 * METER,
-        },
-        {
-            x: 5 * METER,
-            y: 3 * METER,
-        },
-        {
-            x: -5 * METER,
-            y: 3 * METER,
-        },
-    ]);
+    const refState = useRef<State>({
+        vertices: INITIAL_VERTICES,
+    });
 
-    const drawGrid = (context: CanvasRenderingContext2D) => {
+    const refMemory = useRef<State[]>([deepCopy(refState.current)]);
+
+    const drawGrid = useCallback((context: CanvasRenderingContext2D) => {
         context.beginPath();
 
         const fullWidth = Math.round(context.canvas.width / METER) * METER;
@@ -66,7 +59,7 @@ const Editor = () => {
         context.strokeStyle = "#eee";
 
         context.stroke();
-    };
+    }, []);
 
     const drawHolders = (
         context: CanvasRenderingContext2D,
@@ -128,10 +121,6 @@ const Editor = () => {
         context: CanvasRenderingContext2D,
         vertices: Vector2[]
     ) => {
-        if (vertices.length === 0) {
-            return;
-        }
-
         for (let i = 0; i < vertices.length; i++) {
             context.beginPath();
 
@@ -192,120 +181,228 @@ const Editor = () => {
         }
     };
 
-    const drawForVertices = (context: CanvasRenderingContext2D) => {
-        const { current: vertices } = verticesRef;
+    const drawState = useCallback((context: CanvasRenderingContext2D) => {
+        const { vertices } = refState.current;
 
         drawWalls(context, vertices);
 
         drawHolders(context, vertices);
 
         drawLengths(context, vertices);
-    };
+    }, []);
 
-    const draw = (context: CanvasRenderingContext2D) => {
-        context.clearRect(
-            context.canvas.width * -0.5,
-            context.canvas.height * -0.5,
-            context.canvas.width,
-            context.canvas.height
-        );
+    const draw = useCallback(
+        (context: CanvasRenderingContext2D) => {
+            refContext.current = context;
 
-        drawGrid(context);
+            context.clearRect(
+                context.canvas.width * -0.5,
+                context.canvas.height * -0.5,
+                context.canvas.width,
+                context.canvas.height
+            );
 
-        drawForVertices(context);
-    };
+            drawGrid(context);
 
-    const checkHolders = (
-        context: CanvasRenderingContext2D,
-        position: Vector2
+            drawState(context);
+        },
+        [drawState, drawGrid]
+    );
+
+    const forceDraw = useCallback(() => {
+        const context = refContext.current!;
+
+        draw(context);
+    }, [draw]);
+
+    const isOnVertex = (
+        { x: x1, y: y1 }: Vector2,
+        { x: x2, y: y2 }: Vector2
     ) => {
-        const { current: vertices } = verticesRef;
+        const sqrX = Math.pow(x2 - x1, 2);
+
+        const sqrY = Math.pow(y2 - y1, 2);
+
+        return sqrX + sqrY < Math.pow(HANDLE_RADIUS, 2) * 8;
+    };
+
+    const checkHolders = (position: Vector2) => {
+        const { vertices } = refState.current;
 
         for (let i = 0; i < vertices.length; i++) {
-            const value = vertices[i];
-
-            const mag =
-                Math.pow(value.x - position.x, 2) +
-                Math.pow(value.y - position.y, 2);
-
-            if (mag > HANDLE_RADIUS * HANDLE_RADIUS * 8) {
+            if (!isOnVertex(vertices[i], position)) {
                 continue;
             }
 
-            mouseStateRef.current.holding = i;
+            save();
+
+            refMouseState.current.holding = i;
 
             return;
         }
 
-        for (let i = 0; i < vertices.length; i++) {
-            const { x: x1, y: y1 } = vertices.at(i - 1)!;
-
-            const { x: x2, y: y2 } = vertices.at(i)!;
-
+        const isOnLine = (
+            { x: x1, y: y1 }: Vector2,
+            { x: x2, y: y2 }: Vector2
+        ) => {
             const a = y2 - y1;
 
             const b = x1 - x2;
 
             const c = x1 * (y1 - y2) + y1 * (x2 - x1);
 
-            const d =
-                Math.pow(a * position.x + b * position.y + c, 2) /
-                (a * a + b * b);
+            const l = a * a + b * b;
+
+            const d = Math.pow(a * position.x + b * position.y + c, 2) / l;
 
             if (d > HANDLE_RADIUS * HANDLE_RADIUS * 8) {
+                return false;
+            }
+
+            const mx = position.x - (x2 + x1) * 0.5;
+
+            const my = position.y - (y2 + y1) * 0.5;
+
+            return Math.pow(mx, 2) + Math.pow(my, 2) < l * 0.25;
+        };
+
+        for (let i = 0; i < vertices.length; i++) {
+            const v1 = vertices.at(i - 1)!;
+
+            const v2 = vertices.at(i)!;
+
+            if (!isOnLine(v1, v2)) {
                 continue;
             }
 
+            save();
+
             vertices.splice(i, 0, position);
 
-            mouseStateRef.current.holding = i;
+            refMouseState.current.updated = true;
 
-            draw(context);
+            refMouseState.current.holding = i;
+
+            forceDraw();
 
             return;
         }
     };
 
-    const onMouseMove = (
-        context: CanvasRenderingContext2D,
-        position: Vector2
-    ) => {
-        const { holding } = mouseStateRef.current;
+    const onMouseMove = (position: Vector2) => {
+        const { holding } = refMouseState.current;
 
         if (holding === undefined) {
             return;
         }
 
-        verticesRef.current[holding].x = position.x;
+        refState.current.vertices[holding] = position;
 
-        verticesRef.current[holding].y = position.y;
+        refMouseState.current.updated = true;
 
-        draw(context);
+        forceDraw();
     };
 
-    const onMouseDown = (
-        context: CanvasRenderingContext2D,
-        position: Vector2
-    ) => {
-        mouseStateRef.current.isDragging = true;
+    const initMouseState = (position: Vector2) => {
+        refMouseState.current.timestamp = Date.now();
 
-        mouseStateRef.current.origin = position;
+        refMouseState.current.isDragging = true;
 
-        checkHolders(context, position);
+        refMouseState.current.updated = false;
+
+        refMouseState.current.origin = position;
     };
 
-    const onMouseUp = (_: CanvasRenderingContext2D) => {
-        mouseStateRef.current.isDragging = false;
-        mouseStateRef.current.holding = undefined;
+    const onMouseDown = (position: Vector2) => {
+        initMouseState(position);
+
+        checkHolders(position);
     };
+
+    const save = () => refMemory.current.push(deepCopy(refState.current));
+
+    const onMouseUp = (position: Vector2) => {
+        refMouseState.current.isDragging = false;
+
+        refMouseState.current.holding = undefined;
+
+        if (refMouseState.current.updated) {
+            return;
+        }
+
+        const duration = Date.now() - refMouseState.current.timestamp;
+
+        if (duration > 200) {
+            return;
+        }
+
+        const { vertices } = refState.current;
+
+        if (vertices.length <= 3) {
+            return;
+        }
+
+        for (let i = 0; i < vertices.length; i++) {
+            if (!isOnVertex(vertices[i], position)) {
+                continue;
+            }
+
+            save();
+
+            console.log(i);
+
+            vertices.splice(i, 1);
+
+            forceDraw();
+
+            return;
+        }
+    };
+
+    const undo = useCallback(() => {
+        const { current: context } = refContext;
+
+        if (!context) {
+            return;
+        }
+
+        const state = refMemory.current.pop();
+
+        if (!state) {
+            return;
+        }
+
+        refState.current = state;
+
+        forceDraw();
+    }, [forceDraw]);
+
+    const onKeyboardDown = useCallback(
+        ({ key, ctrlKey, metaKey }: KeyboardEvent) => {
+            if (key === "z" && (ctrlKey || metaKey)) {
+                undo();
+            }
+        },
+        [undo]
+    );
+
+    useEffect(() => {
+        window.addEventListener("keydown", onKeyboardDown);
+
+        return () => {
+            window.removeEventListener("keydown", onKeyboardDown);
+        };
+    }, [onKeyboardDown]);
 
     return (
-        <Canvas
-            draw={draw}
-            onMouseMove={onMouseMove}
-            onMouseDown={onMouseDown}
-            onMouseUp={onMouseUp}
-        />
+        <div className={styles.container}>
+            <Canvas
+                draw={draw}
+                onMouseMove={onMouseMove}
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+            />
+        </div>
     );
 };
 
