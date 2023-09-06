@@ -12,7 +12,6 @@ const App = () => {
                     By <a href="mailto:ohjinsu98@icloud.com">Jinsu Oh</a>
                 </address>
             </header>
-            <hr />
             <main className={styles.main}>
                 <Editor />
             </main>

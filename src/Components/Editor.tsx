@@ -10,7 +10,7 @@ import { INITIAL_VERTICES } from "../Constants/Editor";
 
 export type EditorContextProps = {
     subjectVertices: BehaviorSubject<Vector2[]>;
-    memory: Vector2[][];
+    subjectMemory: BehaviorSubject<Vector2[][]>;
     addVertex: (i: number, position: Vector2) => void;
     moveVertex: (i: number, position: Vector2) => void;
     removeVertex: (i: number) => void;
@@ -25,9 +25,7 @@ const Editor: FunctionComponent = () => {
         new BehaviorSubject<Vector2[]>(INITIAL_VERTICES)
     );
 
-    const refMemory = useRef<Vector2[][]>([
-        deepCopy(refSubjectVertices.current.getValue()),
-    ]);
+    const refMemory = useRef(new BehaviorSubject<Vector2[][]>([]));
 
     const addVertex = (i: number, position: Vector2) => {
         const vertices = refSubjectVertices.current.getValue();
@@ -66,22 +64,24 @@ const Editor: FunctionComponent = () => {
 
         const copy = deepCopy(vertices);
 
-        refMemory.current.push(copy);
+        refMemory.current.next([...refMemory.current.getValue(), copy]);
     };
 
     const undo = () => {
-        const state = refMemory.current.pop();
+        const memory = refMemory.current.getValue();
 
-        if (!state) {
+        if (memory.length === 0) {
             return;
         }
 
-        refSubjectVertices.current.next(state);
+        refMemory.current.next(memory.slice(0, -1));
+
+        refSubjectVertices.current.next(memory[memory.length - 1]);
     };
 
     const value = {
         subjectVertices: refSubjectVertices.current,
-        memory: refMemory.current,
+        subjectMemory: refMemory.current,
         addVertex,
         moveVertex,
         removeVertex,

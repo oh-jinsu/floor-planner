@@ -11,6 +11,7 @@ import { HANDLE_RADIUS } from "../Constants/Editor";
 import { isOnCircle, isOnLine } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
+import ToolBar from "./ToolBar";
 
 const Control: FunctionComponent = () => {
     const refMouseState = useRef<MouseState>({
@@ -145,7 +146,9 @@ const Control: FunctionComponent = () => {
             onMouseMove={onMouseMove}
             onMouseDown={onMouseDown}
             onMouseUp={onMouseUp}
-        />
+        >
+            <ToolBar />
+        </GestureDetector>
     );
 };
 
