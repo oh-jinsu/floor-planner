@@ -9,14 +9,13 @@ import Canvas from "./Canvas";
 import { Subject, map } from "rxjs";
 import { DrawCall } from "../Core/DrawCall";
 import { EditorContext } from "./Editor";
-import { State } from "../Core/State";
 import { Vector2 } from "../Core/Vector";
 import { HANDLE_RADIUS, METER } from "../Constants/Editor";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
 
-    const { stateQueue } = useContext(EditorContext);
+    const { subjectVertices } = useContext(EditorContext);
 
     const drawGrid = (context: CanvasRenderingContext2D) => {
         context.beginPath();
@@ -163,13 +162,11 @@ const Painter: FunctionComponent = () => {
     );
 
     const toDrawCall = useCallback(
-        (state: State) => {
+        (vertices: Vector2[]) => {
             return (context: CanvasRenderingContext2D) => {
                 context.clearScreen();
 
                 drawGrid(context);
-
-                const { vertices } = state;
 
                 drawWalls(context, vertices);
 
@@ -182,8 +179,8 @@ const Painter: FunctionComponent = () => {
     );
 
     useEffect(() => {
-        stateQueue.pipe(map(toDrawCall)).subscribe(queue.current);
-    }, [stateQueue, queue, toDrawCall]);
+        subjectVertices.pipe(map(toDrawCall)).subscribe(queue.current);
+    }, [subjectVertices, queue, toDrawCall]);
 
     return <Canvas queue={queue.current} />;
 };

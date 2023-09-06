@@ -2,17 +2,18 @@ import { FunctionComponent, useRef } from "react";
 import styles from "./Editor.module.css";
 import Control from "./Control";
 import { BehaviorSubject } from "rxjs";
-import { INITIAL_STATE, State } from "../Core/State";
 import Painter from "./Painter";
 import { createContext } from "react";
 import { Vector2 } from "../Core/Vector";
 import { deepCopy } from "../Functions/Object";
+import { INITIAL_VERTICES } from "../Constants/Editor";
 
 export type EditorContextProps = {
-    stateQueue: BehaviorSubject<State>;
-    memory: State[];
+    subjectVertices: BehaviorSubject<Vector2[]>;
+    memory: Vector2[][];
     addVertex: (i: number, position: Vector2) => void;
     moveVertex: (i: number, position: Vector2) => void;
+    removeVertex: (i: number) => void;
     capture: () => void;
     undo: () => void;
 };
@@ -20,24 +21,52 @@ export type EditorContextProps = {
 export const EditorContext = createContext<EditorContextProps>({} as any);
 
 const Editor: FunctionComponent = () => {
-    const refStateQueue = useRef(new BehaviorSubject<State>(INITIAL_STATE));
+    const refSubjectVertices = useRef(
+        new BehaviorSubject<Vector2[]>(INITIAL_VERTICES)
+    );
 
-    const refMemory = useRef<State[]>([
-        deepCopy(refStateQueue.current.getValue()),
+    const refMemory = useRef<Vector2[][]>([
+        deepCopy(refSubjectVertices.current.getValue()),
     ]);
 
     const addVertex = (i: number, position: Vector2) => {
-        refStateQueue.current.getValue().vertices.splice(i, 0, position);
+        const vertices = refSubjectVertices.current.getValue();
 
-        refStateQueue.current.next(refStateQueue.current.getValue());
+        refSubjectVertices.current.next([
+            ...vertices.slice(0, i),
+            position,
+            ...vertices.slice(i),
+        ]);
     };
 
     const moveVertex = (i: number, position: Vector2) => {
-        refStateQueue.current.getValue().vertices[i] = position;
+        const vertices = refSubjectVertices.current.getValue();
+
+        const copy = vertices.map((value, index) => {
+            if (index !== i) {
+                return value;
+            }
+
+            return position;
+        });
+
+        refSubjectVertices.current.next(copy);
+    };
+
+    const removeVertex = (i: number) => {
+        const vertices = refSubjectVertices.current.getValue();
+
+        const copy = vertices.filter((_, index) => index !== i);
+
+        refSubjectVertices.current.next(copy);
     };
 
     const capture = () => {
-        refMemory.current.push(deepCopy(refStateQueue.current.getValue()));
+        const vertices = refSubjectVertices.current.getValue();
+
+        const copy = deepCopy(vertices);
+
+        refMemory.current.push(copy);
     };
 
     const undo = () => {
@@ -47,14 +76,15 @@ const Editor: FunctionComponent = () => {
             return;
         }
 
-        refStateQueue.current.next(state);
+        refSubjectVertices.current.next(state);
     };
 
     const value = {
-        stateQueue: refStateQueue.current,
+        subjectVertices: refSubjectVertices.current,
         memory: refMemory.current,
         addVertex,
         moveVertex,
+        removeVertex,
         capture,
         undo,
     };

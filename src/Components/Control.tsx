@@ -20,11 +20,17 @@ const Control: FunctionComponent = () => {
         isDragging: false,
     });
 
-    const { stateQueue, addVertex, moveVertex, capture, undo } =
-        useContext(EditorContext);
+    const {
+        subjectVertices,
+        addVertex,
+        moveVertex,
+        removeVertex,
+        capture,
+        undo,
+    } = useContext(EditorContext);
 
     const checkHolders = (position: Vector2) => {
-        const { vertices } = stateQueue.getValue();
+        const vertices = subjectVertices.getValue();
 
         for (let i = 0; i < vertices.length; i++) {
             if (!isOnCircle(position, vertices[i], HANDLE_RADIUS * 3)) {
@@ -69,8 +75,6 @@ const Control: FunctionComponent = () => {
         moveVertex(holding, position);
 
         refMouseState.current.updated = true;
-
-        stateQueue.next(stateQueue.getValue());
     };
 
     const onMouseDown = (position: Vector2) => {
@@ -100,7 +104,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        const { vertices } = stateQueue.getValue();
+        const vertices = subjectVertices.getValue();
 
         if (vertices.length <= 3) {
             return;
@@ -113,9 +117,7 @@ const Control: FunctionComponent = () => {
 
             capture();
 
-            vertices.splice(i, 1);
-
-            stateQueue.next(stateQueue.getValue());
+            removeVertex(i);
 
             return;
         }
@@ -136,7 +138,7 @@ const Control: FunctionComponent = () => {
         return () => {
             window.removeEventListener("keydown", onKeyboardDown);
         };
-    }, [onKeyboardDown, stateQueue]);
+    }, [onKeyboardDown, subjectVertices]);
 
     return (
         <GestureDetector
