@@ -8,8 +8,6 @@ import {
 import { Vector2 } from "../Core/Vector";
 import { MouseState } from "../Core/MouseState";
 import { HANDLE_RADIUS } from "../Constants/Editor";
-import { State } from "../Core/State";
-import { deepCopy } from "../Functions/Object";
 import { isOnCircle, isOnLine } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
@@ -22,9 +20,8 @@ const Control: FunctionComponent = () => {
         isDragging: false,
     });
 
-    const { stateQueue } = useContext(EditorContext);
-
-    const refMemory = useRef<State[]>([deepCopy(stateQueue.getValue())]);
+    const { stateQueue, addVertex, moveVertex, capture, undo } =
+        useContext(EditorContext);
 
     const checkHolders = (position: Vector2) => {
         const { vertices } = stateQueue.getValue();
@@ -34,7 +31,7 @@ const Control: FunctionComponent = () => {
                 continue;
             }
 
-            captureState();
+            capture();
 
             refMouseState.current.holding = i;
 
@@ -50,15 +47,13 @@ const Control: FunctionComponent = () => {
                 continue;
             }
 
-            captureState();
+            capture();
 
-            vertices.splice(i, 0, position);
+            addVertex(i, position);
 
             refMouseState.current.updated = true;
 
             refMouseState.current.holding = i;
-
-            stateQueue.next(stateQueue.getValue());
 
             return;
         }
@@ -71,7 +66,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        stateQueue.getValue().vertices[holding] = position;
+        moveVertex(holding, position);
 
         refMouseState.current.updated = true;
 
@@ -88,10 +83,6 @@ const Control: FunctionComponent = () => {
         refMouseState.current.origin = position;
 
         checkHolders(position);
-    };
-
-    const captureState = () => {
-        refMemory.current.push(deepCopy(stateQueue.getValue()));
     };
 
     const onMouseUp = (position: Vector2) => {
@@ -120,7 +111,7 @@ const Control: FunctionComponent = () => {
                 continue;
             }
 
-            captureState();
+            capture();
 
             vertices.splice(i, 1);
 
@@ -129,16 +120,6 @@ const Control: FunctionComponent = () => {
             return;
         }
     };
-
-    const undo = useCallback(() => {
-        const state = refMemory.current.pop();
-
-        if (!state) {
-            return;
-        }
-
-        stateQueue.next(state);
-    }, [stateQueue]);
 
     const onKeyboardDown = useCallback(
         ({ key, ctrlKey, metaKey }: KeyboardEvent) => {
