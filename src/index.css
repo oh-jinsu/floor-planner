@@ -5,6 +5,10 @@
   padding: 0;
 }
 
+html {
+  color: #333;
+}
+
 #root {
   overflow: hidden;
 

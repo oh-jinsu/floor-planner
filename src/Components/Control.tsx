@@ -7,8 +7,8 @@ import {
 } from "react";
 import { Vector2 } from "../Core/Vector";
 import { MouseState } from "../Core/MouseState";
-import { HANDLE_RADIUS } from "../Constants/Editor";
-import { isOnCircle, isOnLine } from "../Core/Math";
+import { HANDLE_RADIUS, SIZE } from "../Constants/Editor";
+import { isOnCircle, isOnLine, scalar } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
 import ToolBar from "./ToolBar";
@@ -34,7 +34,9 @@ const Control: FunctionComponent = () => {
         const vertices = subjectVertices.getValue();
 
         for (let i = 0; i < vertices.length; i++) {
-            if (!isOnCircle(position, vertices[i], HANDLE_RADIUS * 3)) {
+            const v = scalar(SIZE, vertices[i]);
+
+            if (!isOnCircle(position, v, HANDLE_RADIUS * 3)) {
                 continue;
             }
 
@@ -46,9 +48,9 @@ const Control: FunctionComponent = () => {
         }
 
         for (let i = 0; i < vertices.length; i++) {
-            const v1 = vertices.at(i - 1)!;
+            const v1 = scalar(SIZE, vertices.at(i - 1)!);
 
-            const v2 = vertices.at(i)!;
+            const v2 = scalar(SIZE, vertices.at(i)!);
 
             if (!isOnLine(position, v1, v2, HANDLE_RADIUS * 2)) {
                 continue;
@@ -56,7 +58,7 @@ const Control: FunctionComponent = () => {
 
             capture();
 
-            addVertex(i, position);
+            addVertex(i, scalar(1 / SIZE, position));
 
             refMouseState.current.updated = true;
 
@@ -73,7 +75,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        moveVertex(holding, position);
+        moveVertex(holding, scalar(1 / SIZE, position));
 
         refMouseState.current.updated = true;
     };
@@ -112,7 +114,9 @@ const Control: FunctionComponent = () => {
         }
 
         for (let i = 0; i < vertices.length; i++) {
-            if (!isOnCircle(position, vertices[i], HANDLE_RADIUS * 3)) {
+            const v = scalar(SIZE, vertices[i]);
+
+            if (!isOnCircle(position, v, HANDLE_RADIUS * 3)) {
                 continue;
             }
 

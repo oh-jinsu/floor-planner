@@ -10,7 +10,8 @@ import { Subject, map } from "rxjs";
 import { DrawCall } from "../Core/DrawCall";
 import { EditorContext } from "./Editor";
 import { Vector2 } from "../Core/Vector";
-import { HANDLE_RADIUS, METER } from "../Constants/Editor";
+import { HANDLE_RADIUS, SIZE } from "../Constants/Editor";
+import { distance } from "../Core/Math";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
@@ -20,9 +21,9 @@ const Painter: FunctionComponent = () => {
     const drawGrid = (context: CanvasRenderingContext2D) => {
         context.beginPath();
 
-        const fullWidth = Math.round(context.canvas.width / METER) * METER;
+        const fullWidth = Math.round(context.canvas.width / SIZE) * SIZE;
 
-        for (let x = 0; x < fullWidth * 0.5; x += METER) {
+        for (let x = 0; x < fullWidth * 0.5; x += SIZE) {
             context.moveTo(x, context.canvas.width * -0.5);
 
             context.lineTo(x, context.canvas.width * 0.5);
@@ -36,9 +37,9 @@ const Painter: FunctionComponent = () => {
             context.lineTo(-x, context.canvas.width * 0.5);
         }
 
-        const fullHeight = Math.round(context.canvas.height / METER) * METER;
+        const fullHeight = Math.round(context.canvas.height / SIZE) * SIZE;
 
-        for (let y = 0; y < fullHeight * 0.5; y += METER) {
+        for (let y = 0; y < fullHeight * 0.5; y += SIZE) {
             context.moveTo(context.canvas.height * -0.5, y);
 
             context.lineTo(context.canvas.height * 0.5, y);
@@ -61,7 +62,7 @@ const Painter: FunctionComponent = () => {
     ) => {
         context.beginPath();
 
-        context.arc(x, y, HANDLE_RADIUS, 0, Math.PI * 2);
+        context.arc(x * SIZE, y * SIZE, HANDLE_RADIUS, 0, Math.PI * 2);
 
         context.fillBy("#777");
 
@@ -87,13 +88,13 @@ const Painter: FunctionComponent = () => {
 
         context.beginPath();
 
-        context.moveTo(vertices[0].x, vertices[0].y);
+        context.moveTo(vertices[0].x * SIZE, vertices[0].y * SIZE);
 
         for (let i = 1; i < vertices.length; i++) {
-            context.lineTo(vertices[i].x, vertices[i].y);
+            context.lineTo(vertices[i].x * SIZE, vertices[i].y * SIZE);
         }
 
-        context.lineTo(vertices[0].x, vertices[0].y);
+        context.lineTo(vertices[0].x * SIZE, vertices[0].y * SIZE);
 
         context.fillBy("#fff");
 
@@ -111,25 +112,33 @@ const Painter: FunctionComponent = () => {
 
         const theta = Math.atan2(y2 - y1, x2 - x1);
 
-        const dx = Math.cos(theta - Math.PI * 0.5) * 0.5 * METER;
+        const dx = Math.cos(theta - Math.PI * 0.5) * 0.5;
 
-        const dy = Math.sin(theta - Math.PI * 0.5) * 0.5 * METER;
+        const dy = Math.sin(theta - Math.PI * 0.5) * 0.5;
 
-        context.moveTo(x1 + dx, y1 + dy);
+        const sx = (x1 + dx) * SIZE;
 
-        context.lineTo(x2 + dx, y2 + dy);
+        const sy = (y1 + dy) * SIZE;
 
-        const adx = Math.cos(theta - Math.PI * 0.5) * 7;
+        const ex = (x2 + dx) * SIZE;
 
-        const ady = Math.sin(theta - Math.PI * 0.5) * 7;
+        const ey = (y2 + dy) * SIZE;
 
-        context.moveTo(x1 + dx - adx, y1 + dy - ady);
+        context.moveTo(sx, sy);
 
-        context.lineTo(x1 + dx + adx, y1 + dy + ady);
+        context.lineTo(ex, ey);
 
-        context.moveTo(x2 + dx - adx, y2 + dy - ady);
+        const adx = Math.cos(theta - Math.PI * 0.5) * 10;
 
-        context.lineTo(x2 + dx + adx, y2 + dy + ady);
+        const ady = Math.sin(theta - Math.PI * 0.5) * 10;
+
+        context.moveTo(sx - adx, sy - ady);
+
+        context.lineTo(sx + adx, sy + ady);
+
+        context.moveTo(ex - adx, ey - ady);
+
+        context.lineTo(ex + adx, ey + ady);
 
         context.strokeBy("#bfbfbf", 1);
 
@@ -141,11 +150,9 @@ const Painter: FunctionComponent = () => {
 
         context.setTextStyle("15px serif", "#111", "center", "middle");
 
-        const d = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+        const l = distance({ x: x1, y: y1 }, { x: x2, y: y2 });
 
-        const length = Math.round((d * 1000) / METER);
-
-        context.fillText(`${length}`, mx, my);
+        context.fillText(`${Math.round(l * 1000)}`, mx * SIZE, my * SIZE);
     };
 
     const drawLengths = useCallback(
