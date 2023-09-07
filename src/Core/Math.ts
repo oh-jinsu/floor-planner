@@ -1,36 +1,24 @@
 import { Vector2 } from "./Vector";
 
-export const scalar = (k: number, v: Vector2): Vector2 => {
+export const scale = (k: number, v: Vector2): Vector2 => {
     return {
         x: v.x * k,
         y: v.y * k,
-    }
-}
+    };
+};
 
 export const distance = (
     { x: x1, y: y1 }: Vector2,
-    { x: x2, y: y2 }: Vector2,
+    { x: x2, y: y2 }: Vector2
 ) => {
-    return Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2))
-}
-
-export const isOnCircle = (
-    { x: x1, y: y1 }: Vector2,
-    { x: x2, y: y2 }: Vector2,
-    r = 1,
-) => {
-    const sqrX = Math.pow((x2 - x1), 2);
-
-    const sqrY = Math.pow((y2 - y1), 2);
-
-    return sqrX + sqrY < r * r;
+    return Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
 };
 
 export const isOnLine = (
-    { x: px, y: py}: Vector2,
+    { x: px, y: py }: Vector2,
     { x: x1, y: y1 }: Vector2,
     { x: x2, y: y2 }: Vector2,
-    r = 1,
+    r = 1
 ) => {
     const a = y2 - y1;
 

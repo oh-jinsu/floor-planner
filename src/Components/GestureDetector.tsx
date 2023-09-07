@@ -64,7 +64,15 @@ const GestureDetector: FunctionComponent<Props> = ({
         [getPosition, onMouseUp]
     );
 
+    const preventDefault = (e: Event) => {
+        e.preventDefault();
+    };
+
     useEffect(() => {
+        const { current } = ref;
+
+        current?.addEventListener("contextmenu", preventDefault);
+
         window.addEventListener("mousemove", mouseMove);
 
         window.addEventListener("mousedown", mouseDown);
@@ -72,6 +80,8 @@ const GestureDetector: FunctionComponent<Props> = ({
         window.addEventListener("mouseup", mouseUp);
 
         return () => {
+            current?.addEventListener("contextmenu", preventDefault);
+
             window.removeEventListener("mousemove", mouseMove);
 
             window.removeEventListener("mousedown", mouseDown);

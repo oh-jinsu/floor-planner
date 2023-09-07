@@ -1,7 +1,8 @@
 import { FunctionComponent, useCallback, useEffect, useRef } from "react";
 import styles from "./Canvas.module.css";
 import { Observable } from "rxjs";
-import { DrawCall } from "../Core/DrawCall";
+
+export type DrawCall = (context: CanvasRenderingContext2D) => void;
 
 export type Props = {
     resolution?: number;

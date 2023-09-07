@@ -5,12 +5,24 @@ import { BehaviorSubject } from "rxjs";
 import Painter from "./Painter";
 import { createContext } from "react";
 import { Vector2 } from "../Core/Vector";
-import { deepCopy } from "../Functions/Object";
-import { INITIAL_VERTICES } from "../Constants/Editor";
+import { clone } from "../Functions/Object";
+import {
+    BASE_GRID_SPACE,
+    DEFAULT_HANDLE_RADIUS,
+    DEFAULT_LINE_WIDTH,
+    DEFAULT_SHORT_CLICK_THRESHOLD,
+    DEFAULT_SPARE_SCALE,
+    INITIAL_VERTICES,
+} from "../Constants/Editor";
+import { currentValue } from "../Functions/React";
 
 export type Option = {
     snapping: boolean;
     gridSize: number;
+    handleRadius: number;
+    spareScale: number;
+    lineWidth: number;
+    shortClickThreshold: number;
 };
 
 export type State = {
@@ -38,22 +50,26 @@ const Editor: FunctionComponent = () => {
         new BehaviorSubject<State>({
             option: {
                 snapping: true,
-                gridSize: 100,
+                gridSize: BASE_GRID_SPACE,
+                handleRadius: DEFAULT_HANDLE_RADIUS,
+                spareScale: DEFAULT_SPARE_SCALE,
+                lineWidth: DEFAULT_LINE_WIDTH,
+                shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
             },
             vertices: INITIAL_VERTICES,
         })
     );
 
     const refMemory = useRef(
-        new BehaviorSubject<State[]>([refState.current.getValue()])
+        new BehaviorSubject<State[]>([currentValue(refState)])
     );
 
     const refMemoryPointer = useRef(0);
 
     const snapPosition = (position: Vector2): Vector2 => {
-        const state = refState.current.getValue();
+        const state = currentValue(refState);
 
-        const gridScale = 100 / state.option.gridSize;
+        const gridScale = BASE_GRID_SPACE / state.option.gridSize;
 
         const { snapping } = state.option;
 
@@ -68,9 +84,9 @@ const Editor: FunctionComponent = () => {
     };
 
     const addVertex = (i: number, position: Vector2) => {
-        const state = refState.current.getValue();
+        const state = currentValue(refState);
 
-        const { vertices } = state;
+        const { vertices } = currentValue(refState);
 
         refState.current.next({
             ...state,
@@ -81,7 +97,7 @@ const Editor: FunctionComponent = () => {
     };
 
     const moveVertex = (i: number, position: Vector2) => {
-        const state = refState.current.getValue();
+        const state = currentValue(refState);
 
         const vertices = state.vertices.map((value, index) => {
             if (index !== i) {
@@ -100,7 +116,7 @@ const Editor: FunctionComponent = () => {
     };
 
     const removeVertex = (i: number) => {
-        const state = refState.current.getValue();
+        const state = currentValue(refState);
 
         const vertices = state.vertices.filter((_, index) => index !== i);
 
@@ -112,16 +128,37 @@ const Editor: FunctionComponent = () => {
         return true;
     };
 
-    const clean = () => {};
+    const clean = () => {
+        const state = currentValue(refState);
+
+        const isUnique = (p: Vector2, i: number) => {
+            const { vertices } = state;
+
+            const j = (i + 1) % vertices.length;
+
+            const q = vertices[j];
+
+            return q.x !== p.x || q.y !== p.y;
+        };
+
+        const vertices = state.vertices.filter(isUnique);
+
+        refState.current.next({
+            ...state,
+            vertices,
+        });
+    };
 
     const capture = () => {
-        const vertices = refState.current.getValue();
+        clean();
 
-        const memory = refMemory.current.getValue();
+        const state = currentValue(refState);
+
+        const memory = currentValue(refMemory);
 
         const copy = [
             ...memory.slice(0, refMemoryPointer.current + 1),
-            deepCopy(vertices),
+            clone(state),
         ];
 
         const capacity = Math.min(100, copy.length);
@@ -134,7 +171,7 @@ const Editor: FunctionComponent = () => {
     const pointCurrentMemory = () => {
         const i = refMemoryPointer.current;
 
-        const state = refMemory.current.getValue()[i];
+        const state = currentValue(refMemory)[i];
 
         refState.current.next(state);
     };
@@ -150,7 +187,7 @@ const Editor: FunctionComponent = () => {
     };
 
     const redo = () => {
-        const memory = refMemory.current.getValue();
+        const memory = currentValue(refMemory);
 
         if (refMemoryPointer.current === memory.length - 1) {
             return;
@@ -166,7 +203,7 @@ const Editor: FunctionComponent = () => {
             return;
         }
 
-        const state = refState.current.getValue();
+        const state = currentValue(refState);
 
         refState.current.next({
             ...state,

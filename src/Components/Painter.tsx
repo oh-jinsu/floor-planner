@@ -5,12 +5,15 @@ import {
     useEffect,
     useRef,
 } from "react";
-import Canvas from "./Canvas";
+import Canvas, { DrawCall } from "./Canvas";
 import { Subject, map } from "rxjs";
-import { DrawCall } from "../Core/DrawCall";
 import { EditorContext, State } from "./Editor";
 import { Vector2 } from "../Core/Vector";
-import { HANDLE_RADIUS, SCALE_UNIT } from "../Constants/Editor";
+import {
+    BASE_GRID_SPACE,
+    DEFAULT_HANDLE_RADIUS,
+    BASE_SCALE_UNIT,
+} from "../Constants/Editor";
 import { distance } from "../Core/Math";
 
 const Painter: FunctionComponent = () => {
@@ -20,13 +23,14 @@ const Painter: FunctionComponent = () => {
 
     const drawGrid = useCallback(
         (context: CanvasRenderingContext2D) => {
-            const gridScale = subjectState.getValue().option.gridSize / 100;
+            const gridScale =
+                subjectState.getValue().option.gridSize / BASE_GRID_SPACE;
 
             context.beginPath();
 
             const { width } = context.canvas;
 
-            for (let x = 0; x < width * 0.5; x += SCALE_UNIT * gridScale) {
+            for (let x = 0; x < width * 0.5; x += BASE_SCALE_UNIT * gridScale) {
                 context.moveTo(x, width * -0.5);
 
                 context.lineTo(x, width * 0.5);
@@ -42,7 +46,11 @@ const Painter: FunctionComponent = () => {
 
             const { height } = context.canvas;
 
-            for (let y = 0; y < height * 0.5; y += SCALE_UNIT * gridScale) {
+            for (
+                let y = 0;
+                y < height * 0.5;
+                y += BASE_SCALE_UNIT * gridScale
+            ) {
                 context.moveTo(height * -0.5, y);
 
                 context.lineTo(height * 0.5, y);
@@ -61,16 +69,17 @@ const Painter: FunctionComponent = () => {
         [subjectState]
     );
 
-    const drawHolder = (
+    const drawHandle = (
         context: CanvasRenderingContext2D,
-        { x, y }: Vector2
+        { x, y }: Vector2,
+        radius: number
     ) => {
         context.beginPath();
 
         context.arc(
-            x * SCALE_UNIT,
-            y * SCALE_UNIT,
-            HANDLE_RADIUS,
+            x * BASE_SCALE_UNIT,
+            y * BASE_SCALE_UNIT,
+            DEFAULT_HANDLE_RADIUS,
             0,
             Math.PI * 2
         );
@@ -80,10 +89,14 @@ const Painter: FunctionComponent = () => {
         context.closePath();
     };
 
-    const drawHolders = useCallback(
-        (context: CanvasRenderingContext2D, vertices: Vector2[]) => {
+    const drawHandles = useCallback(
+        (
+            context: CanvasRenderingContext2D,
+            vertices: Vector2[],
+            radius: number
+        ) => {
             for (let i = 0; i < vertices.length; i++) {
-                drawHolder(context, vertices[i]);
+                drawHandle(context, vertices[i], radius);
             }
         },
         []
@@ -91,7 +104,8 @@ const Painter: FunctionComponent = () => {
 
     const drawWalls = (
         context: CanvasRenderingContext2D,
-        vertices: Vector2[]
+        vertices: Vector2[],
+        lineWidth: number
     ) => {
         if (vertices.length === 0) {
             return;
@@ -99,20 +113,26 @@ const Painter: FunctionComponent = () => {
 
         context.beginPath();
 
-        context.moveTo(vertices[0].x * SCALE_UNIT, vertices[0].y * SCALE_UNIT);
+        context.moveTo(
+            vertices[0].x * BASE_SCALE_UNIT,
+            vertices[0].y * BASE_SCALE_UNIT
+        );
 
         for (let i = 1; i < vertices.length; i++) {
             context.lineTo(
-                vertices[i].x * SCALE_UNIT,
-                vertices[i].y * SCALE_UNIT
+                vertices[i].x * BASE_SCALE_UNIT,
+                vertices[i].y * BASE_SCALE_UNIT
             );
         }
 
-        context.lineTo(vertices[0].x * SCALE_UNIT, vertices[0].y * SCALE_UNIT);
+        context.lineTo(
+            vertices[0].x * BASE_SCALE_UNIT,
+            vertices[0].y * BASE_SCALE_UNIT
+        );
 
         context.fillBy("#fff");
 
-        context.strokeBy("#777", 3, "round");
+        context.strokeBy("#777", lineWidth, "square");
 
         context.closePath();
     };
@@ -122,6 +142,12 @@ const Painter: FunctionComponent = () => {
         { x: x1, y: y1 }: Vector2,
         { x: x2, y: y2 }: Vector2
     ) => {
+        const l = distance({ x: x1, y: y1 }, { x: x2, y: y2 });
+
+        if (l === 0) {
+            return;
+        }
+
         context.beginPath();
 
         const theta = Math.atan2(y2 - y1, x2 - x1);
@@ -130,21 +156,21 @@ const Painter: FunctionComponent = () => {
 
         const dy = Math.sin(theta - Math.PI * 0.5) * 0.5;
 
-        const sx = (x1 + dx) * SCALE_UNIT;
+        const sx = (x1 + dx) * BASE_SCALE_UNIT;
 
-        const sy = (y1 + dy) * SCALE_UNIT;
+        const sy = (y1 + dy) * BASE_SCALE_UNIT;
 
-        const ex = (x2 + dx) * SCALE_UNIT;
+        const ex = (x2 + dx) * BASE_SCALE_UNIT;
 
-        const ey = (y2 + dy) * SCALE_UNIT;
+        const ey = (y2 + dy) * BASE_SCALE_UNIT;
 
         context.moveTo(sx, sy);
 
         context.lineTo(ex, ey);
 
-        const adx = Math.cos(theta - Math.PI * 0.5) * 10;
+        const adx = Math.cos(theta - Math.PI * 0.5) * BASE_SCALE_UNIT * 0.2;
 
-        const ady = Math.sin(theta - Math.PI * 0.5) * 10;
+        const ady = Math.sin(theta - Math.PI * 0.5) * BASE_SCALE_UNIT * 0.2;
 
         context.moveTo(sx - adx, sy - ady);
 
@@ -154,7 +180,7 @@ const Painter: FunctionComponent = () => {
 
         context.lineTo(ex + adx, ey + ady);
 
-        context.strokeBy("#bfbfbf", 1);
+        context.strokeBy("#bbb", 1);
 
         context.closePath();
 
@@ -162,14 +188,12 @@ const Painter: FunctionComponent = () => {
 
         const my = (y1 + y2 + 2 * dy) / 2;
 
-        context.setTextStyle("15px serif", "#111", "center", "middle");
-
-        const l = distance({ x: x1, y: y1 }, { x: x2, y: y2 });
+        context.setTextStyle("15px serif", "#000", "center", "middle");
 
         context.fillText(
-            `${Math.round(l * 100)}`,
-            mx * SCALE_UNIT,
-            my * SCALE_UNIT
+            `${Math.round(l * BASE_GRID_SPACE)}`,
+            mx * BASE_SCALE_UNIT,
+            my * BASE_SCALE_UNIT
         );
     };
 
@@ -187,20 +211,20 @@ const Painter: FunctionComponent = () => {
     );
 
     const toDrawCall = useCallback(
-        ({ vertices }: State) => {
+        ({ vertices, option }: State) => {
             return (context: CanvasRenderingContext2D) => {
                 context.clearScreen();
 
                 drawGrid(context);
 
-                drawWalls(context, vertices);
+                drawWalls(context, vertices, option.lineWidth);
 
-                drawHolders(context, vertices);
+                drawHandles(context, vertices, option.handleRadius);
 
                 drawLengths(context, vertices);
             };
         },
-        [drawHolders, drawLengths, drawGrid]
+        [drawHandles, drawLengths, drawGrid]
     );
 
     useEffect(() => {

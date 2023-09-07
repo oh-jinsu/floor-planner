@@ -1,7 +1,6 @@
-import styles from "./App.module.css";
-import "./Extensions/Canvas";
-import "./Extensions/Array";
 import Editor from "./Components/Editor";
+import styles from "./App.module.css";
+import "./Extensions/";
 
 const App = () => {
     return (

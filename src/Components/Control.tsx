@@ -6,12 +6,19 @@ import {
     useRef,
 } from "react";
 import { Vector2 } from "../Core/Vector";
-import { MouseState } from "../Core/MouseState";
-import { HANDLE_RADIUS, SCALE_UNIT } from "../Constants/Editor";
-import { isOnCircle, isOnLine, scalar } from "../Core/Math";
+import { BASE_SCALE_UNIT } from "../Constants/Editor";
+import { distance, isOnLine, scale } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
 import ToolBar from "./ToolBar";
+
+type MouseState = {
+    timestamp: number;
+    updated: boolean;
+    origin: Vector2;
+    isDragging: boolean;
+    holding?: number;
+};
 
 const Control: FunctionComponent = () => {
     const refMouseState = useRef<MouseState>({
@@ -21,22 +28,18 @@ const Control: FunctionComponent = () => {
         isDragging: false,
     });
 
-    const {
-        subjectState: subjectVertices,
-        addVertex,
-        moveVertex,
-        removeVertex,
-        capture,
-        undo,
-    } = useContext(EditorContext);
+    const { subjectState, addVertex, moveVertex, removeVertex, capture, undo } =
+        useContext(EditorContext);
 
     const checkHolders = (position: Vector2) => {
-        const { vertices } = subjectVertices.getValue();
+        const { vertices, option } = subjectState.getValue();
+
+        const { handleRadius, lineWidth, spareScale } = option;
 
         for (let i = 0; i < vertices.length; i++) {
-            const v = scalar(SCALE_UNIT, vertices[i]);
+            const v = scale(BASE_SCALE_UNIT, vertices[i]);
 
-            if (!isOnCircle(position, v, HANDLE_RADIUS * 3)) {
+            if (distance(position, v) > handleRadius * spareScale) {
                 continue;
             }
 
@@ -46,15 +49,15 @@ const Control: FunctionComponent = () => {
         }
 
         for (let i = 0; i < vertices.length; i++) {
-            const v1 = scalar(SCALE_UNIT, vertices.at(i - 1)!);
+            const v1 = scale(BASE_SCALE_UNIT, vertices.at(i - 1)!);
 
-            const v2 = scalar(SCALE_UNIT, vertices.at(i)!);
+            const v2 = scale(BASE_SCALE_UNIT, vertices.at(i)!);
 
-            if (!isOnLine(position, v1, v2, HANDLE_RADIUS * 2)) {
+            if (!isOnLine(position, v1, v2, lineWidth * spareScale)) {
                 continue;
             }
 
-            addVertex(i, scalar(1 / SCALE_UNIT, position));
+            addVertex(i, scale(1 / BASE_SCALE_UNIT, position));
 
             refMouseState.current.updated = true;
 
@@ -71,7 +74,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        moveVertex(holding, scalar(1 / SCALE_UNIT, position));
+        moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
 
         refMouseState.current.updated = true;
     };
@@ -101,20 +104,22 @@ const Control: FunctionComponent = () => {
 
         const duration = Date.now() - refMouseState.current.timestamp;
 
-        if (duration > 200) {
+        const { vertices, option } = subjectState.getValue();
+
+        const { handleRadius, spareScale, shortClickThreshold } = option;
+
+        if (duration > shortClickThreshold) {
             return;
         }
-
-        const { vertices } = subjectVertices.getValue();
 
         if (vertices.length <= 3) {
             return;
         }
 
         for (let i = 0; i < vertices.length; i++) {
-            const v = scalar(SCALE_UNIT, vertices[i]);
+            const v = scale(BASE_SCALE_UNIT, vertices[i]);
 
-            if (!isOnCircle(position, v, HANDLE_RADIUS * 3)) {
+            if (distance(position, v) > handleRadius * spareScale) {
                 continue;
             }
 
@@ -141,7 +146,7 @@ const Control: FunctionComponent = () => {
         return () => {
             window.removeEventListener("keydown", onKeyboardDown);
         };
-    }, [onKeyboardDown, subjectVertices]);
+    }, [onKeyboardDown, subjectState]);
 
     return (
         <GestureDetector
