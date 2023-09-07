@@ -18,45 +18,48 @@ const Painter: FunctionComponent = () => {
 
     const { subjectState } = useContext(EditorContext);
 
-    const drawGrid = (context: CanvasRenderingContext2D) => {
-        const gridScale = subjectState.getValue().option.gridSize / 100;
+    const drawGrid = useCallback(
+        (context: CanvasRenderingContext2D) => {
+            const gridScale = subjectState.getValue().option.gridSize / 100;
 
-        context.beginPath();
+            context.beginPath();
 
-        const { width } = context.canvas;
+            const { width } = context.canvas;
 
-        for (let x = 0; x < width * 0.5; x += SCALE_UNIT * gridScale) {
-            context.moveTo(x, width * -0.5);
+            for (let x = 0; x < width * 0.5; x += SCALE_UNIT * gridScale) {
+                context.moveTo(x, width * -0.5);
 
-            context.lineTo(x, width * 0.5);
+                context.lineTo(x, width * 0.5);
 
-            if (x === 0) {
-                continue;
+                if (x === 0) {
+                    continue;
+                }
+
+                context.moveTo(-x, width * -0.5);
+
+                context.lineTo(-x, width * 0.5);
             }
 
-            context.moveTo(-x, width * -0.5);
+            const { height } = context.canvas;
 
-            context.lineTo(-x, width * 0.5);
-        }
+            for (let y = 0; y < height * 0.5; y += SCALE_UNIT * gridScale) {
+                context.moveTo(height * -0.5, y);
 
-        const { height } = context.canvas;
+                context.lineTo(height * 0.5, y);
 
-        for (let y = 0; y < height * 0.5; y += SCALE_UNIT * gridScale) {
-            context.moveTo(height * -0.5, y);
+                if (y === 0) {
+                    continue;
+                }
 
-            context.lineTo(height * 0.5, y);
+                context.moveTo(height * -0.5, -y);
 
-            if (y === 0) {
-                continue;
+                context.lineTo(height * 0.5, -y);
             }
 
-            context.moveTo(height * -0.5, -y);
-
-            context.lineTo(height * 0.5, -y);
-        }
-
-        context.strokeBy("#eee");
-    };
+            context.strokeBy("#eee");
+        },
+        [subjectState]
+    );
 
     const drawHolder = (
         context: CanvasRenderingContext2D,
@@ -197,7 +200,7 @@ const Painter: FunctionComponent = () => {
                 drawLengths(context, vertices);
             };
         },
-        [drawHolders, drawLengths]
+        [drawHolders, drawLengths, drawGrid]
     );
 
     useEffect(() => {
