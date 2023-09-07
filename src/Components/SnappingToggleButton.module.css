@@ -1,0 +1,27 @@
+.button {
+    padding: 6px;
+}
+
+.size {
+    margin-left: 2px;
+
+    font-size: 14px;
+    
+    width: 48px;
+
+    text-align: center;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+
+    height: 40px;
+}
+
+.arrow {
+    cursor: pointer;
+
+    width: 24px;
+    height: 100%;
+}

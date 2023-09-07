@@ -1,5 +1,6 @@
 import { FunctionComponent, ReactNode } from "react";
 import styles from "./Tooltip.module.css";
+import { join } from "../Functions/Element";
 
 export type Props = {
     className?: string;
@@ -9,9 +10,9 @@ export type Props = {
 
 const Tooltip: FunctionComponent<Props> = ({ className, children, text }) => {
     return (
-        <div className={`${styles.container} ${className}`}>
+        <div className={join(styles.container, className)}>
             {children}
-            <div className={styles.tooltip}>{text}</div>
+            <span className={styles.tooltip}>{text}</span>
         </div>
     );
 };
