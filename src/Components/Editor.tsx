@@ -15,6 +15,7 @@ import {
     INITIAL_VERTICES,
 } from "../Constants/Editor";
 import { currentValue } from "../Functions/React";
+import { arrayBufferToString } from "../Functions/Buffer";
 
 export type Option = {
     snapping: boolean;
@@ -38,6 +39,8 @@ export type EditorContextProps = {
     removeVertex: (i: number) => boolean;
     clean: () => void;
     capture: () => void;
+    serialize: () => Blob;
+    deserialize: (blob: Blob) => void;
     undo: () => void;
     redo: () => void;
     changeOption: (option: Partial<Option>) => void;
@@ -61,10 +64,18 @@ const Editor: FunctionComponent = () => {
     );
 
     const refMemory = useRef(
-        new BehaviorSubject<State[]>([currentValue(refState)])
+        new BehaviorSubject<State[]>([clone(currentValue(refState))])
     );
 
     const refMemoryPointer = useRef(0);
+
+    const initialize = (state: State) => {
+        refState.current.next(state);
+
+        refMemory.current.next([clone(state)])
+
+        refMemoryPointer.current = 0;
+    }
 
     const snapPosition = (position: Vector2): Vector2 => {
         const state = currentValue(refState);
@@ -178,6 +189,34 @@ const Editor: FunctionComponent = () => {
         refState.current.next(state);
     };
 
+    const serialize = () => {
+        const state = currentValue(refState);
+
+        const content = JSON.stringify(state);
+
+        return new Blob([content], { type: "text/plain "});
+    }
+
+    const deserialize = (blob: Blob) => {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            const result = event.target?.result;
+
+            if (!result) {
+                return;
+            }
+
+            const data = result instanceof ArrayBuffer ? arrayBufferToString(result): result;
+
+            const state = JSON.parse(data);
+
+            initialize(state);
+        }
+
+        reader.readAsText(blob);
+    }
+
     const undo = () => {
         if (refMemoryPointer.current === 0) {
             return;
@@ -224,6 +263,8 @@ const Editor: FunctionComponent = () => {
         removeVertex,
         clean,
         capture,
+        serialize,
+        deserialize,
         undo,
         redo,
         changeOption,
