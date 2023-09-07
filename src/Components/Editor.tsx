@@ -34,7 +34,7 @@ export type EditorContextProps = {
     subjectState: BehaviorSubject<State>;
     subjectMemory: BehaviorSubject<State[]>;
     addVertex: (i: number, position: Vector2) => boolean;
-    moveVertex: (i: number, position: Vector2) => boolean;
+    moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
     clean: () => void;
     capture: () => void;
@@ -99,12 +99,14 @@ const Editor: FunctionComponent = () => {
     const moveVertex = (i: number, position: Vector2) => {
         const state = currentValue(refState);
 
+        const destination = snapPosition(position);
+
         const vertices = state.vertices.map((value, index) => {
             if (index !== i) {
                 return value;
             }
 
-            return snapPosition(position);
+            return destination;
         });
 
         refState.current.next({
@@ -112,7 +114,7 @@ const Editor: FunctionComponent = () => {
             vertices,
         });
 
-        return true;
+        return destination;
     };
 
     const removeVertex = (i: number) => {

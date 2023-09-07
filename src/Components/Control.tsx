@@ -45,6 +45,11 @@ const Control: FunctionComponent = () => {
 
             refMouseState.current.holding = i;
 
+            refMouseState.current.origin = {
+                x: vertices[i].x,
+                y: vertices[i].y,
+            }
+
             return;
         }
 
@@ -74,9 +79,13 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
+       const dst = moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
 
-        refMouseState.current.updated = true;
+        const { origin } =  refMouseState.current;
+
+        const updated = dst.x !== origin.x || dst.y !== origin.y;
+
+        refMouseState.current.updated = updated;
     };
 
     const onMouseDown = (position: Vector2) => {
@@ -85,8 +94,6 @@ const Control: FunctionComponent = () => {
         refMouseState.current.isDragging = true;
 
         refMouseState.current.updated = false;
-
-        refMouseState.current.origin = position;
 
         checkHolders(position);
     };
