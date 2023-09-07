@@ -31,8 +31,8 @@ export type State = {
 };
 
 export type EditorContextProps = {
-    subjectState: BehaviorSubject<State>;
-    subjectMemory: BehaviorSubject<State[]>;
+    state: BehaviorSubject<State>;
+    memory: BehaviorSubject<State[]>;
     addVertex: (i: number, position: Vector2) => boolean;
     moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
@@ -217,8 +217,8 @@ const Editor: FunctionComponent = () => {
     };
 
     const value: EditorContextProps = {
-        subjectState: refState.current,
-        subjectMemory: refMemory.current,
+        state: refState.current,
+        memory: refMemory.current,
         addVertex,
         moveVertex,
         removeVertex,

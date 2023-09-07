@@ -10,7 +10,7 @@ import {
 import { EditorContext } from "./Editor";
 
 const SnappingToggleButton: FunctionComponent = () => {
-    const { subjectState, changeOption } = useContext(EditorContext);
+    const { state, changeOption } = useContext(EditorContext);
 
     const [snapping, setSnapping] = useState<boolean>();
 
@@ -24,13 +24,13 @@ const SnappingToggleButton: FunctionComponent = () => {
 
     const onGridUpButtonClicked = () => {
         changeOption({
-            gridSize: subjectState.getValue().option.gridSize + 10,
+            gridSize: state.getValue().option.gridSize + 10,
         });
     };
 
     const onGridDownButtonClicked = () => {
         changeOption({
-            gridSize: subjectState.getValue().option.gridSize - 10,
+            gridSize: state.getValue().option.gridSize - 10,
         });
     };
 
@@ -39,7 +39,7 @@ const SnappingToggleButton: FunctionComponent = () => {
     };
 
     useEffect(() => {
-        const sub = subjectState.subscribe(({ option }) => {
+        const sub = state.subscribe(({ option }) => {
             const { snapping, gridSize } = option;
 
             setGridSize(toGridSizeFormat(gridSize));
@@ -50,7 +50,7 @@ const SnappingToggleButton: FunctionComponent = () => {
         return () => {
             sub.unsubscribe();
         };
-    }, [subjectState]);
+    }, [state]);
 
     return (
         <Tooltip text="격자에 맞추기">

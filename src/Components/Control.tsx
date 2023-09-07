@@ -28,47 +28,39 @@ const Control: FunctionComponent = () => {
         isDragging: false,
     });
 
-    const { subjectState, addVertex, moveVertex, removeVertex, capture, undo } =
+    const { state, addVertex, moveVertex, removeVertex, capture, undo } =
         useContext(EditorContext);
 
-    const checkHolders = (position: Vector2) => {
-        const { vertices, option } = subjectState.getValue();
+    const scanVertices = (position: Vector2) => {
+        const { vertices, option } = state.getValue();
 
         const { handleRadius, lineWidth, spareScale } = option;
 
         for (let i = 0; i < vertices.length; i++) {
-            const v = scale(BASE_SCALE_UNIT, vertices[i]);
+            const v1 = scale(BASE_SCALE_UNIT, vertices[i]);
 
-            if (distance(position, v) > handleRadius * spareScale) {
-                continue;
+            if (distance(position, v1) < handleRadius * spareScale) {
+                refMouseState.current.holding = i;
+
+                refMouseState.current.origin = {
+                    x: vertices[i].x,
+                    y: vertices[i].y,
+                }
+
+                return;
             }
 
-            refMouseState.current.holding = i;
+            const v2 = scale(BASE_SCALE_UNIT, vertices.at(i - 1)!);
 
-            refMouseState.current.origin = {
-                x: vertices[i].x,
-                y: vertices[i].y,
+            if (isOnLine(position, v2, v1, lineWidth * spareScale)) {
+                const updated = addVertex(i, scale(1 / BASE_SCALE_UNIT, position));
+
+                refMouseState.current.updated = updated;
+    
+                refMouseState.current.holding = i;
+
+                return;
             }
-
-            return;
-        }
-
-        for (let i = 0; i < vertices.length; i++) {
-            const v1 = scale(BASE_SCALE_UNIT, vertices.at(i - 1)!);
-
-            const v2 = scale(BASE_SCALE_UNIT, vertices.at(i)!);
-
-            if (!isOnLine(position, v1, v2, lineWidth * spareScale)) {
-                continue;
-            }
-
-            addVertex(i, scale(1 / BASE_SCALE_UNIT, position));
-
-            refMouseState.current.updated = true;
-
-            refMouseState.current.holding = i;
-
-            return;
         }
     };
 
@@ -79,7 +71,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-       const dst = moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
+        const dst = moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
 
         const { origin } =  refMouseState.current;
 
@@ -95,7 +87,7 @@ const Control: FunctionComponent = () => {
 
         refMouseState.current.updated = false;
 
-        checkHolders(position);
+        scanVertices(position);
     };
 
     const onMouseUp = (position: Vector2) => {
@@ -111,7 +103,7 @@ const Control: FunctionComponent = () => {
 
         const duration = Date.now() - refMouseState.current.timestamp;
 
-        const { vertices, option } = subjectState.getValue();
+        const { vertices, option } = state.getValue();
 
         const { handleRadius, spareScale, shortClickThreshold } = option;
 
@@ -153,7 +145,7 @@ const Control: FunctionComponent = () => {
         return () => {
             window.removeEventListener("keydown", onKeyboardDown);
         };
-    }, [onKeyboardDown, subjectState]);
+    }, [onKeyboardDown, state]);
 
     return (
         <GestureDetector

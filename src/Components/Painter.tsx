@@ -19,12 +19,12 @@ import { distance } from "../Core/Math";
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
 
-    const { subjectState } = useContext(EditorContext);
+    const { state } = useContext(EditorContext);
 
     const drawGrid = useCallback(
         (context: CanvasRenderingContext2D) => {
             const gridScale =
-                subjectState.getValue().option.gridSize / BASE_GRID_SPACE;
+                state.getValue().option.gridSize / BASE_GRID_SPACE;
 
             context.beginPath();
 
@@ -66,7 +66,7 @@ const Painter: FunctionComponent = () => {
 
             context.strokeBy("#eee");
         },
-        [subjectState]
+        [state]
     );
 
     const drawHandle = (
@@ -228,8 +228,8 @@ const Painter: FunctionComponent = () => {
     );
 
     useEffect(() => {
-        subjectState.pipe(map(toDrawCall)).subscribe(queue.current);
-    }, [subjectState, queue, toDrawCall]);
+        state.pipe(map(toDrawCall)).subscribe(queue.current);
+    }, [state, queue, toDrawCall]);
 
     return <Canvas queue={queue.current} />;
 };
