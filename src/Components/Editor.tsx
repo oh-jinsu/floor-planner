@@ -87,7 +87,9 @@ const Editor: FunctionComponent = () => {
             deepCopy(vertices),
         ];
 
-        refMemory.current.next(copy);
+        const capacity = Math.min(100, copy.length);
+
+        refMemory.current.next(copy.slice(-capacity));
 
         refMemoryPointer.current = copy.length - 1;
     };
