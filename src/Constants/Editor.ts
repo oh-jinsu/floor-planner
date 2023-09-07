@@ -1,5 +1,5 @@
 
-export const SIZE = 40;
+export const SCALE_UNIT = 40;
 
 export const HANDLE_RADIUS = 4;
 

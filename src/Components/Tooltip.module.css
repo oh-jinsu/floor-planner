@@ -16,15 +16,15 @@
 .tooltip {
     position: absolute;
 
-    bottom: calc(-100% - 4px);
+    bottom: -100%;
 
     border: 1px solid #ccc;
-    background-color: white;
+    background-color: yellow;
     color: inherit;
 
-    padding: 6px 8px 4px 8px;
+    padding: 6px 8px 5px 8px;
 
-    font-size: 14px;
+    font-size: 12px;
     text-align: center;
     white-space: nowrap;
 
@@ -46,6 +46,6 @@
     border-width: 1px;
     border-style: solid;
     border-color: #ccc transparent transparent #ccc;
-    background-color: white;
+    background-color: yellow;
     color: inherit;
 }

@@ -41,6 +41,8 @@ CanvasRenderingContext2D.prototype.strokeBy = function(style, width, cap) {
         this.lineCap = cap;
     }
 
+    this.lineJoin = "round";
+
     this.stroke();
 }
 

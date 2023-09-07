@@ -5,10 +5,9 @@
     justify-content: flex-start;
     align-items: flex-start;
 
-    padding: 2px;
-    gap: 2px;
+    padding: 4px;
+    gap: 4px;
 }
-
 
 .button {
     margin: 0;
@@ -17,14 +16,35 @@
 
     background-color: #fff;
 
-    border: 1px solid #777;
+    border: 2px outset;
 
     display: flex;
     justify-content: center;
     align-items: center;
 
-    width: 36px;
-    height: 36px;
+    min-width: 40px;
+    height: 40px;
+    padding: 8px;
+}
+
+.button:hover {
+    cursor: pointer;
+}
+
+.button:active {
+    border: 2px inset;
+}
+
+.button.active {
+    border: 2px inset;
+
+    color: white;
+
+    background-color: #00f;
+}
+
+.button.active:active {
+    border: 2px outset;
 }
 
 .button label {
@@ -32,6 +52,38 @@
     margin-left: 4px;
 }
 
-.button:hover {
-    background-color: #eee;
+.grid_button {
+    display: flex;
+}
+
+.grid_size {
+    margin-left: 4px;
+
+    font-size: 12px;
+}
+
+.grid_arrow_container {
+    display: flex;
+    flex-direction: column;
+
+    height: 40px;
+}
+
+.grid_arrow {
+    cursor: pointer;
+
+    width: 24px;
+    height: 100%;
+
+    border: 2px outset;
+
+    color: inherit;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.grid_arrow:active {
+    border: 2px inset;
 }

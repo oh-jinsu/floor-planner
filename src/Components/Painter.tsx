@@ -10,47 +10,49 @@ import { Subject, map } from "rxjs";
 import { DrawCall } from "../Core/DrawCall";
 import { EditorContext, State } from "./Editor";
 import { Vector2 } from "../Core/Vector";
-import { HANDLE_RADIUS, SIZE } from "../Constants/Editor";
+import { HANDLE_RADIUS, SCALE_UNIT } from "../Constants/Editor";
 import { distance } from "../Core/Math";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
 
-    const { subjectState: subjectVertices } = useContext(EditorContext);
+    const { subjectState } = useContext(EditorContext);
 
     const drawGrid = (context: CanvasRenderingContext2D) => {
+        const gridScale = subjectState.getValue().option.gridSize / 100;
+
         context.beginPath();
 
-        const fullWidth = Math.round(context.canvas.width / SIZE) * SIZE;
+        const { width } = context.canvas;
 
-        for (let x = 0; x < fullWidth * 0.5; x += SIZE) {
-            context.moveTo(x, context.canvas.width * -0.5);
+        for (let x = 0; x < width * 0.5; x += SCALE_UNIT * gridScale) {
+            context.moveTo(x, width * -0.5);
 
-            context.lineTo(x, context.canvas.width * 0.5);
+            context.lineTo(x, width * 0.5);
 
             if (x === 0) {
                 continue;
             }
 
-            context.moveTo(-x, context.canvas.width * -0.5);
+            context.moveTo(-x, width * -0.5);
 
-            context.lineTo(-x, context.canvas.width * 0.5);
+            context.lineTo(-x, width * 0.5);
         }
 
-        const fullHeight = Math.round(context.canvas.height / SIZE) * SIZE;
+        const { height } = context.canvas;
 
-        for (let y = 0; y < fullHeight * 0.5; y += SIZE) {
-            context.moveTo(context.canvas.height * -0.5, y);
+        for (let y = 0; y < height * 0.5; y += SCALE_UNIT * gridScale) {
+            context.moveTo(height * -0.5, y);
 
-            context.lineTo(context.canvas.height * 0.5, y);
+            context.lineTo(height * 0.5, y);
 
             if (y === 0) {
                 continue;
             }
 
-            context.moveTo(context.canvas.height * -0.5, -y);
+            context.moveTo(height * -0.5, -y);
 
-            context.lineTo(context.canvas.height * 0.5, -y);
+            context.lineTo(height * 0.5, -y);
         }
 
         context.strokeBy("#eee");
@@ -62,7 +64,13 @@ const Painter: FunctionComponent = () => {
     ) => {
         context.beginPath();
 
-        context.arc(x * SIZE, y * SIZE, HANDLE_RADIUS, 0, Math.PI * 2);
+        context.arc(
+            x * SCALE_UNIT,
+            y * SCALE_UNIT,
+            HANDLE_RADIUS,
+            0,
+            Math.PI * 2
+        );
 
         context.fillBy("#777");
 
@@ -88,13 +96,16 @@ const Painter: FunctionComponent = () => {
 
         context.beginPath();
 
-        context.moveTo(vertices[0].x * SIZE, vertices[0].y * SIZE);
+        context.moveTo(vertices[0].x * SCALE_UNIT, vertices[0].y * SCALE_UNIT);
 
         for (let i = 1; i < vertices.length; i++) {
-            context.lineTo(vertices[i].x * SIZE, vertices[i].y * SIZE);
+            context.lineTo(
+                vertices[i].x * SCALE_UNIT,
+                vertices[i].y * SCALE_UNIT
+            );
         }
 
-        context.lineTo(vertices[0].x * SIZE, vertices[0].y * SIZE);
+        context.lineTo(vertices[0].x * SCALE_UNIT, vertices[0].y * SCALE_UNIT);
 
         context.fillBy("#fff");
 
@@ -116,13 +127,13 @@ const Painter: FunctionComponent = () => {
 
         const dy = Math.sin(theta - Math.PI * 0.5) * 0.5;
 
-        const sx = (x1 + dx) * SIZE;
+        const sx = (x1 + dx) * SCALE_UNIT;
 
-        const sy = (y1 + dy) * SIZE;
+        const sy = (y1 + dy) * SCALE_UNIT;
 
-        const ex = (x2 + dx) * SIZE;
+        const ex = (x2 + dx) * SCALE_UNIT;
 
-        const ey = (y2 + dy) * SIZE;
+        const ey = (y2 + dy) * SCALE_UNIT;
 
         context.moveTo(sx, sy);
 
@@ -152,7 +163,11 @@ const Painter: FunctionComponent = () => {
 
         const l = distance({ x: x1, y: y1 }, { x: x2, y: y2 });
 
-        context.fillText(`${Math.round(l * 1000)}`, mx * SIZE, my * SIZE);
+        context.fillText(
+            `${Math.round(l * 100)}`,
+            mx * SCALE_UNIT,
+            my * SCALE_UNIT
+        );
     };
 
     const drawLengths = useCallback(
@@ -186,8 +201,8 @@ const Painter: FunctionComponent = () => {
     );
 
     useEffect(() => {
-        subjectVertices.pipe(map(toDrawCall)).subscribe(queue.current);
-    }, [subjectVertices, queue, toDrawCall]);
+        subjectState.pipe(map(toDrawCall)).subscribe(queue.current);
+    }, [subjectState, queue, toDrawCall]);
 
     return <Canvas queue={queue.current} />;
 };
