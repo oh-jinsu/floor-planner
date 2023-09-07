@@ -8,7 +8,7 @@ import {
 import Canvas from "./Canvas";
 import { Subject, map } from "rxjs";
 import { DrawCall } from "../Core/DrawCall";
-import { EditorContext } from "./Editor";
+import { EditorContext, State } from "./Editor";
 import { Vector2 } from "../Core/Vector";
 import { HANDLE_RADIUS, SIZE } from "../Constants/Editor";
 import { distance } from "../Core/Math";
@@ -16,7 +16,7 @@ import { distance } from "../Core/Math";
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
 
-    const { subjectVertices } = useContext(EditorContext);
+    const { subjectState: subjectVertices } = useContext(EditorContext);
 
     const drawGrid = (context: CanvasRenderingContext2D) => {
         context.beginPath();
@@ -169,7 +169,7 @@ const Painter: FunctionComponent = () => {
     );
 
     const toDrawCall = useCallback(
-        (vertices: Vector2[]) => {
+        ({ vertices }: State) => {
             return (context: CanvasRenderingContext2D) => {
                 context.clearScreen();
 

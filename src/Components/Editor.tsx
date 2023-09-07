@@ -8,39 +8,51 @@ import { Vector2 } from "../Core/Vector";
 import { deepCopy } from "../Functions/Object";
 import { INITIAL_VERTICES } from "../Constants/Editor";
 
+export type State = {
+    vertices: Vector2[];
+};
+
 export type EditorContextProps = {
-    subjectVertices: BehaviorSubject<Vector2[]>;
-    subjectMemory: BehaviorSubject<Vector2[][]>;
+    subjectState: BehaviorSubject<State>;
+    subjectMemory: BehaviorSubject<State[]>;
     addVertex: (i: number, position: Vector2) => void;
     moveVertex: (i: number, position: Vector2) => void;
     removeVertex: (i: number) => void;
     capture: () => void;
     undo: () => void;
+    redo: () => void;
 };
 
 export const EditorContext = createContext<EditorContextProps>({} as any);
 
 const Editor: FunctionComponent = () => {
-    const refSubjectVertices = useRef(
-        new BehaviorSubject<Vector2[]>(INITIAL_VERTICES)
+    const refState = useRef(
+        new BehaviorSubject<State>({
+            vertices: INITIAL_VERTICES,
+        })
     );
 
-    const refMemory = useRef(new BehaviorSubject<Vector2[][]>([]));
+    const refMemory = useRef(
+        new BehaviorSubject<State[]>([refState.current.getValue()])
+    );
+
+    const refMemoryPointer = useRef(0);
 
     const addVertex = (i: number, position: Vector2) => {
-        const vertices = refSubjectVertices.current.getValue();
+        const state = refState.current.getValue();
 
-        refSubjectVertices.current.next([
-            ...vertices.slice(0, i),
-            position,
-            ...vertices.slice(i),
-        ]);
+        const { vertices } = state;
+
+        refState.current.next({
+            ...state,
+            vertices: [...vertices.slice(0, i), position, ...vertices.slice(i)],
+        });
     };
 
     const moveVertex = (i: number, position: Vector2) => {
-        const vertices = refSubjectVertices.current.getValue();
+        const state = refState.current.getValue();
 
-        const copy = vertices.map((value, index) => {
+        const vertices = state.vertices.map((value, index) => {
             if (index !== i) {
                 return value;
             }
@@ -48,45 +60,77 @@ const Editor: FunctionComponent = () => {
             return position;
         });
 
-        refSubjectVertices.current.next(copy);
+        refState.current.next({
+            ...state,
+            vertices,
+        });
     };
 
     const removeVertex = (i: number) => {
-        const vertices = refSubjectVertices.current.getValue();
+        const state = refState.current.getValue();
 
-        const copy = vertices.filter((_, index) => index !== i);
+        const vertices = state.vertices.filter((_, index) => index !== i);
 
-        refSubjectVertices.current.next(copy);
+        refState.current.next({
+            ...state,
+            vertices,
+        });
     };
 
     const capture = () => {
-        const vertices = refSubjectVertices.current.getValue();
+        const vertices = refState.current.getValue();
 
-        const copy = deepCopy(vertices);
+        const memory = refMemory.current.getValue();
 
-        refMemory.current.next([...refMemory.current.getValue(), copy]);
+        const copy = [
+            ...memory.slice(0, refMemoryPointer.current + 1),
+            deepCopy(vertices),
+        ];
+
+        refMemory.current.next(copy);
+
+        refMemoryPointer.current = copy.length - 1;
+    };
+
+    const pointCurrentMemory = () => {
+        const i = refMemoryPointer.current;
+
+        const state = refMemory.current.getValue()[i];
+
+        refState.current.next(state);
     };
 
     const undo = () => {
-        const memory = refMemory.current.getValue();
-
-        if (memory.length === 0) {
+        if (refMemoryPointer.current === 0) {
             return;
         }
 
-        refMemory.current.next(memory.slice(0, -1));
+        refMemoryPointer.current -= 1;
 
-        refSubjectVertices.current.next(memory[memory.length - 1]);
+        pointCurrentMemory();
+    };
+
+    const redo = () => {
+        const memory = refMemory.current.getValue();
+
+        if (refMemoryPointer.current === memory.length - 1) {
+            return;
+        }
+
+        refMemoryPointer.current += 1;
+
+        pointCurrentMemory();
     };
 
     const value = {
-        subjectVertices: refSubjectVertices.current,
+        subjectState: refState.current,
         subjectMemory: refMemory.current,
         addVertex,
         moveVertex,
         removeVertex,
         capture,
         undo,
+        redo,
     };
 
     return (

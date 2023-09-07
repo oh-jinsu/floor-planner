@@ -22,7 +22,7 @@ const Control: FunctionComponent = () => {
     });
 
     const {
-        subjectVertices,
+        subjectState: subjectVertices,
         addVertex,
         moveVertex,
         removeVertex,
@@ -31,7 +31,7 @@ const Control: FunctionComponent = () => {
     } = useContext(EditorContext);
 
     const checkHolders = (position: Vector2) => {
-        const vertices = subjectVertices.getValue();
+        const { vertices } = subjectVertices.getValue();
 
         for (let i = 0; i < vertices.length; i++) {
             const v = scalar(SIZE, vertices[i]);
@@ -39,8 +39,6 @@ const Control: FunctionComponent = () => {
             if (!isOnCircle(position, v, HANDLE_RADIUS * 3)) {
                 continue;
             }
-
-            capture();
 
             refMouseState.current.holding = i;
 
@@ -55,8 +53,6 @@ const Control: FunctionComponent = () => {
             if (!isOnLine(position, v1, v2, HANDLE_RADIUS * 2)) {
                 continue;
             }
-
-            capture();
 
             addVertex(i, scalar(1 / SIZE, position));
 
@@ -98,6 +94,8 @@ const Control: FunctionComponent = () => {
         refMouseState.current.holding = undefined;
 
         if (refMouseState.current.updated) {
+            capture();
+
             return;
         }
 
@@ -107,7 +105,7 @@ const Control: FunctionComponent = () => {
             return;
         }
 
-        const vertices = subjectVertices.getValue();
+        const { vertices } = subjectVertices.getValue();
 
         if (vertices.length <= 3) {
             return;
@@ -120,9 +118,9 @@ const Control: FunctionComponent = () => {
                 continue;
             }
 
-            capture();
-
             removeVertex(i);
+
+            capture();
 
             return;
         }

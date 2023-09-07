@@ -11,11 +11,7 @@ import {
 } from "react-icons/md";
 
 const ToolBar = () => {
-    const { undo } = useContext(EditorContext);
-
-    const onUndoButtonClicked = () => {
-        undo();
-    };
+    const { undo, redo } = useContext(EditorContext);
 
     return (
         <div className={styles.container}>
@@ -30,12 +26,12 @@ const ToolBar = () => {
                 </button>
             </Tooltip>
             <Tooltip text="되돌리기">
-                <button className={styles.button} onClick={onUndoButtonClicked}>
+                <button className={styles.button} onClick={undo}>
                     <MdUndo size={20} />
                 </button>
             </Tooltip>
             <Tooltip text="다시실행">
-                <button className={styles.button}>
+                <button className={styles.button} onClick={redo}>
                     <MdRedo size={20} />
                 </button>
             </Tooltip>
