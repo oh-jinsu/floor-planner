@@ -5,10 +5,6 @@
   padding: 0;
 }
 
-html {
-  color: #333;
-}
-
 #root {
   overflow: hidden;
 
@@ -17,4 +13,40 @@ html {
 
   display: flex;
   flex-direction: column;
+}
+
+
+button {
+  margin: 0;
+
+  color: inherit;
+  background-color: #fff;
+
+  border: 2px outset;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+button:active {
+  border: 2px inset;
+}
+
+
+
+button.active {
+  border: 2px inset;
+
+  color: white;
+
+  background-color: #00f;
+}
+
+button.active:active {
+  border: 2px outset;
 }

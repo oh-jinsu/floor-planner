@@ -81,10 +81,7 @@ const ToolBar = () => {
             <div className={styles.grid_button}>
                 <Tooltip text="격자에 맞추기">
                     <button
-                        className={join(
-                            styles.button,
-                            snapping && styles.active
-                        )}
+                        className={join(styles.button, snapping && "active")}
                         onClick={onSnappingButtonClicked}
                     >
                         <MdGridView size={20} />

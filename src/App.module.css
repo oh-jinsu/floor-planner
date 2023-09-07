@@ -8,11 +8,11 @@
     border-bottom: 1px solid #777;
 }
 
-.header h1 {
+.title {
     line-height: 28px;
 }
 
-.header address {
+.address {
     margin-left: 6px;
 }
 
