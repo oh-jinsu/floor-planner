@@ -8,6 +8,7 @@ import {
 import { Vector2 } from "../Core/Vector";
 import { ViewportContext } from "./Viewport";
 import { getOffset } from "../Functions/Element";
+import { BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH } from "../Constants/Editor";
 
 export type Props = {
     children?: ReactNode;
@@ -34,11 +35,19 @@ const GestureDetector: FunctionComponent<Props> = ({
 
             const offset = getOffset(current);
 
-            const x =
-                e.x - offset.x - current.scrollWidth * 0.5 + current.scrollLeft;
+            const width =
+                current.clientWidth < BASE_VIEWPORT_WIDTH
+                    ? current.scrollWidth
+                    : BASE_VIEWPORT_WIDTH;
 
-            const y =
-                e.y - offset.y - current.scrollWidth * 0.5 + current.scrollTop;
+            const x = e.x - offset.x - width * 0.5 + current.scrollLeft;
+
+            const height =
+                current.clientHeight < BASE_VIEWPORT_HEIGHT
+                    ? current.scrollHeight
+                    : BASE_VIEWPORT_HEIGHT;
+
+            const y = e.y - offset.y - height * 0.5 + current.scrollTop;
 
             return { x, y };
         },
