@@ -76,18 +76,25 @@ const SideBar = () => {
                     <h3 className={styles.subject}>
                         {state.menus[selected].subject}
                     </h3>
-                    <ul className={styles.items}>
-                        {state.menus[selected].items.map(
-                            ({ icon, name }, i) => (
-                                <li key={i.toString()} className={styles.item}>
-                                    <button className={styles.figure}>
-                                        {icon}
-                                    </button>
-                                    <h4 className={styles.name}>{name}</h4>
-                                </li>
-                            )
-                        )}
-                    </ul>
+                    {state.menus[selected].items.length === 0 ? (
+                        <p className={styles.notice}>자료가 없습니다.</p>
+                    ) : (
+                        <ul className={styles.items}>
+                            {state.menus[selected].items.map(
+                                ({ icon, name }, i) => (
+                                    <li
+                                        key={i.toString()}
+                                        className={styles.item}
+                                    >
+                                        <button className={styles.figure}>
+                                            {icon}
+                                        </button>
+                                        <h4 className={styles.name}>{name}</h4>
+                                    </li>
+                                )
+                            )}
+                        </ul>
+                    )}
                 </div>
             )}
         </aside>

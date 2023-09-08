@@ -32,6 +32,16 @@
     overflow-y: scroll;
 }
 
+.subject {
+    margin: 16px;
+
+    border-bottom: 1px solid #777;
+}
+
+.notice {
+    padding: 16px;
+}
+
 .items {
     position: absolute;
     width: 100%;
@@ -43,12 +53,6 @@
     gap: 24px;
 
     list-style: none;
-}
-
-.subject {
-    margin: 16px;
-
-    border-bottom: 1px solid #777;
 }
 
 .figure {
