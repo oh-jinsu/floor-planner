@@ -2,11 +2,12 @@ import {
     FunctionComponent,
     ReactNode,
     useCallback,
+    useContext,
     useEffect,
-    useRef,
 } from "react";
 import { Vector2 } from "../Core/Vector";
-import styles from "./GestureDetector.module.css";
+import { ViewportContext } from "./Viewport";
+import { getOffset } from "../Functions/Element";
 
 export type Props = {
     children?: ReactNode;
@@ -21,21 +22,28 @@ const GestureDetector: FunctionComponent<Props> = ({
     onMouseDown,
     onMouseUp,
 }) => {
-    const ref = useRef<HTMLDivElement>(null);
+    const { refViewport } = useContext(ViewportContext);
 
-    const getPosition = useCallback((e: MouseEvent) => {
-        const current = ref.current!;
+    const getPosition = useCallback(
+        (e: MouseEvent) => {
+            const current = refViewport.current;
 
-        const offsetX = current.parentElement?.offsetLeft || 0;
+            if (!current) {
+                return { x: 0, y: 0 };
+            }
 
-        const x = e.x - offsetX - current.offsetWidth * 0.5;
+            const offset = getOffset(current);
 
-        const offsetY = current.parentElement?.offsetTop || 0;
+            const x =
+                e.x - offset.x - current.scrollWidth * 0.5 + current.scrollLeft;
 
-        const y = e.y - offsetY - current.offsetHeight * 0.5;
+            const y =
+                e.y - offset.y - current.scrollWidth * 0.5 + current.scrollTop;
 
-        return { x, y };
-    }, []);
+            return { x, y };
+        },
+        [refViewport]
+    );
 
     const mouseMove = useCallback(
         (e: MouseEvent) => {
@@ -69,7 +77,7 @@ const GestureDetector: FunctionComponent<Props> = ({
     };
 
     useEffect(() => {
-        const { current } = ref;
+        const { current } = refViewport;
 
         current?.addEventListener("contextmenu", preventDefault);
 
@@ -88,13 +96,9 @@ const GestureDetector: FunctionComponent<Props> = ({
 
             window.removeEventListener("mouseup", mouseUp);
         };
-    }, [mouseMove, mouseDown, mouseUp]);
+    }, [refViewport, mouseMove, mouseDown, mouseUp]);
 
-    return (
-        <div ref={ref} className={styles.container}>
-            {children}
-        </div>
-    );
+    return <>{children}</>;
 };
 
 export default GestureDetector;

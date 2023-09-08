@@ -1,0 +1,7 @@
+.container {
+    display: flex;
+
+    min-width: 256px;
+
+    border-right: 1px solid #777;
+}

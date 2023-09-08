@@ -4,12 +4,6 @@
     display: flex;
 
     flex: 1;
-}
 
-.main {
-    position: relative;
-
-    display: flex;
-
-    flex: 1;
+    overflow: scroll;
 }

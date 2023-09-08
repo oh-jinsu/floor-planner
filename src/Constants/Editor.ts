@@ -2,6 +2,10 @@ export const BASE_SCALE_UNIT = 40;
 
 export const BASE_GRID_SPACE = 100;
 
+export const BASE_VIEWPORT_WIDTH = BASE_SCALE_UNIT * 40;
+
+export const BASE_VIEWPORT_HEIGHT = BASE_SCALE_UNIT * 40;
+
 export const DEFAULT_HANDLE_RADIUS = 4;
 
 export const DEFAULT_SPARE_SCALE = 3;

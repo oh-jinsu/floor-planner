@@ -21,13 +21,15 @@ const DownloadButton = () => {
         link.click();
 
         document.body.removeChild(link);
-    }
+    };
 
-    return <Tooltip text="다운로드">
-        <ToolBarButton onClick={onDownloadButtonClicked}>
-            <MdDownload size={20} />
-        </ToolBarButton>
-    </Tooltip>;
-}
+    return (
+        <Tooltip text="다운로드">
+            <ToolBarButton onClick={onDownloadButtonClicked}>
+                <MdDownload size={20} />
+            </ToolBarButton>
+        </Tooltip>
+    );
+};
 
 export default DownloadButton;

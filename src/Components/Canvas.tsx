@@ -1,6 +1,7 @@
 import { FunctionComponent, useCallback, useEffect, useRef } from "react";
 import styles from "./Canvas.module.css";
 import { Observable } from "rxjs";
+import { BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH } from "../Constants/Editor";
 
 export type DrawCall = (context: CanvasRenderingContext2D) => void;
 
@@ -10,8 +11,6 @@ export type Props = {
 };
 
 const Canvas: FunctionComponent<Props> = ({ resolution, queue }) => {
-    const lastCall = useRef<DrawCall>();
-
     const ref = useRef<HTMLCanvasElement>(null);
 
     const getContext = () => {
@@ -23,7 +22,7 @@ const Canvas: FunctionComponent<Props> = ({ resolution, queue }) => {
         [resolution]
     );
 
-    const resize = useCallback(() => {
+    const initialize = useCallback(() => {
         const { current } = ref;
 
         if (!current) {
@@ -31,6 +30,10 @@ const Canvas: FunctionComponent<Props> = ({ resolution, queue }) => {
         }
 
         const canvasResolution = getCanvasResolution();
+
+        current.style.width = `${BASE_VIEWPORT_WIDTH}px`;
+
+        current.style.height = `${BASE_VIEWPORT_HEIGHT}px`;
 
         current.width = current.clientWidth * canvasResolution;
 
@@ -50,33 +53,23 @@ const Canvas: FunctionComponent<Props> = ({ resolution, queue }) => {
             current.width * 0.5,
             current.height * 0.5
         );
-
-        context.clearRect(0, 0, current.width, current.height);
-
-        lastCall.current?.(context);
     }, [getCanvasResolution]);
 
     const onNext = useCallback((drawCall: DrawCall) => {
         const context = getContext()!;
 
-        lastCall.current = drawCall;
-
         drawCall(context);
     }, []);
 
     useEffect(() => {
-        window.addEventListener("resize", resize, false);
-
-        resize();
+        initialize();
 
         const subscription = queue.subscribe(onNext);
 
         return () => {
             subscription.unsubscribe();
-
-            window.removeEventListener("resize", resize, false);
         };
-    }, [resize, queue, onNext]);
+    }, [initialize, queue, onNext]);
 
     return <canvas className={styles.canvas} ref={ref} />;
 };

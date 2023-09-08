@@ -1,5 +1,6 @@
 import {
     FunctionComponent,
+    ReactNode,
     useCallback,
     useContext,
     useEffect,
@@ -10,7 +11,6 @@ import { BASE_SCALE_UNIT } from "../Constants/Editor";
 import { distance, isOnLine, scale } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
-import ToolBar from "./ToolBar";
 
 type MouseState = {
     timestamp: number;
@@ -20,7 +20,11 @@ type MouseState = {
     holding?: number;
 };
 
-const Control: FunctionComponent = () => {
+export type Props = {
+    children?: ReactNode;
+};
+
+const Control: FunctionComponent<Props> = ({ children }) => {
     const refMouseState = useRef<MouseState>({
         timestamp: 0,
         updated: false,
@@ -45,7 +49,7 @@ const Control: FunctionComponent = () => {
                 refMouseState.current.origin = {
                     x: vertices[i].x,
                     y: vertices[i].y,
-                }
+                };
 
                 return;
             }
@@ -53,10 +57,13 @@ const Control: FunctionComponent = () => {
             const v2 = scale(BASE_SCALE_UNIT, vertices.at(i - 1)!);
 
             if (isOnLine(position, v2, v1, lineWidth * spareScale)) {
-                const updated = addVertex(i, scale(1 / BASE_SCALE_UNIT, position));
+                const updated = addVertex(
+                    i,
+                    scale(1 / BASE_SCALE_UNIT, position)
+                );
 
                 refMouseState.current.updated = updated;
-    
+
                 refMouseState.current.holding = i;
 
                 return;
@@ -73,7 +80,7 @@ const Control: FunctionComponent = () => {
 
         const dst = moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
 
-        const { origin } =  refMouseState.current;
+        const { origin } = refMouseState.current;
 
         const updated = dst.x !== origin.x || dst.y !== origin.y;
 
@@ -153,7 +160,7 @@ const Control: FunctionComponent = () => {
             onMouseDown={onMouseDown}
             onMouseUp={onMouseUp}
         >
-            <ToolBar />
+            {children}
         </GestureDetector>
     );
 };

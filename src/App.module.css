@@ -15,9 +15,3 @@
 .address {
     margin-left: 6px;
 }
-
-.main {
-    flex: 1;
-
-    display: flex;
-}

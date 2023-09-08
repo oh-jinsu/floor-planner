@@ -16,6 +16,8 @@ import {
 } from "../Constants/Editor";
 import { currentValue } from "../Functions/React";
 import { arrayBufferToString } from "../Functions/Buffer";
+import Viewport from "./Viewport";
+import ToolBar from "./ToolBar";
 
 export type Option = {
     snapping: boolean;
@@ -72,10 +74,10 @@ const Editor: FunctionComponent = () => {
     const initialize = (state: State) => {
         refState.current.next(state);
 
-        refMemory.current.next([clone(state)])
+        refMemory.current.next([clone(state)]);
 
         refMemoryPointer.current = 0;
-    }
+    };
 
     const snapPosition = (position: Vector2): Vector2 => {
         const state = currentValue(refState);
@@ -194,8 +196,8 @@ const Editor: FunctionComponent = () => {
 
         const content = JSON.stringify(state);
 
-        return new Blob([content], { type: "text/plain "});
-    }
+        return new Blob([content], { type: "text/plain " });
+    };
 
     const deserialize = (blob: Blob) => {
         const reader = new FileReader();
@@ -207,15 +209,18 @@ const Editor: FunctionComponent = () => {
                 return;
             }
 
-            const data = result instanceof ArrayBuffer ? arrayBufferToString(result): result;
+            const data =
+                result instanceof ArrayBuffer
+                    ? arrayBufferToString(result)
+                    : result;
 
             const state = JSON.parse(data);
 
             initialize(state);
-        }
+        };
 
         reader.readAsText(blob);
-    }
+    };
 
     const undo = () => {
         if (refMemoryPointer.current === 0) {
@@ -273,8 +278,15 @@ const Editor: FunctionComponent = () => {
     return (
         <EditorContext.Provider value={value}>
             <div className={styles.container}>
-                <Painter />
-                <Control />
+                {/* <SideBar /> */}
+                <main className={styles.main}>
+                    <Viewport>
+                        <Control>
+                            <Painter />
+                        </Control>
+                    </Viewport>
+                    <ToolBar />
+                </main>
             </div>
         </EditorContext.Provider>
     );
