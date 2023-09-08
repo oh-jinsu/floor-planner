@@ -1,7 +1,73 @@
 .container {
     display: flex;
 
-    min-width: 256px;
+    height: 100%;
 
     border-right: 1px solid #777;
+}
+
+.menus {
+    display: flex;
+    flex-direction: column;
+
+    height: 100%;
+
+    background-color: #00f;
+
+    list-style: none;
+}
+
+.button {
+    width: 56px;
+    height: 56px;
+}
+
+.scroll {
+    position: relative;
+
+    width: 256px;
+    height: 100%;
+
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.items {
+    position: absolute;
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 16px;
+    gap: 24px;
+
+    list-style: none;
+}
+
+.subject {
+    margin: 16px;
+
+    border-bottom: 1px solid #777;
+}
+
+.figure {
+    width: 100%;
+    aspect-ratio: 1;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    border: 1px solid #333;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.item .name {
+    margin-top: 12px;
 }

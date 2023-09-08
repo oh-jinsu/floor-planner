@@ -6,6 +6,7 @@ import { MdUndo, MdRedo } from "react-icons/md";
 import SnappingToggleButton from "./SnappingToggleButton";
 import DownloadButton from "./DownloadButton";
 import UploadButton from "./UploadButton";
+import ToolBarButton from "./ToolBarButton";
 
 const ToolBar = () => {
     const { undo, redo } = useContext(EditorContext);
@@ -14,17 +15,17 @@ const ToolBar = () => {
         <div className={styles.container}>
             <DownloadButton />
             <UploadButton />
+            <SnappingToggleButton />
             <Tooltip text="되돌리기">
-                <button className={styles.button} onClick={undo}>
+                <ToolBarButton onClick={undo}>
                     <MdUndo size={20} />
-                </button>
+                </ToolBarButton>
             </Tooltip>
             <Tooltip text="다시실행">
-                <button className={styles.button} onClick={redo}>
+                <ToolBarButton onClick={redo}>
                     <MdRedo size={20} />
-                </button>
+                </ToolBarButton>
             </Tooltip>
-            <SnappingToggleButton />
         </div>
     );
 };

@@ -18,6 +18,7 @@ import { currentValue } from "../Functions/React";
 import { arrayBufferToString } from "../Functions/Buffer";
 import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
+import SideBar from "./Sidebar";
 
 export type Option = {
     snapping: boolean;
@@ -278,7 +279,7 @@ const Editor: FunctionComponent = () => {
     return (
         <EditorContext.Provider value={value}>
             <div className={styles.container}>
-                {/* <SideBar /> */}
+                <SideBar />
                 <main className={styles.main}>
                     <Viewport>
                         <Control>

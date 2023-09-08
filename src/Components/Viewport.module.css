@@ -6,4 +6,9 @@
     flex: 1;
 
     overflow: scroll;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none
 }
