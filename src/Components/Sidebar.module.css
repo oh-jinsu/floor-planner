@@ -20,12 +20,15 @@
 .button {
     width: 56px;
     height: 56px;
+
+    display: flex;
+    flex-direction: column;
 }
 
 .scroll {
     position: relative;
 
-    width: 256px;
+    width: 224px;
     height: 100%;
 
     overflow-x: hidden;

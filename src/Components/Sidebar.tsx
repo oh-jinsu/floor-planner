@@ -68,7 +68,7 @@ const SideBar = () => {
     return (
         <aside className={styles.container}>
             <ul className={styles.menus}>
-                {menus.map(({ icon }, i) => (
+                {menus.map(({ icon, subject }, i) => (
                     <li key={i.toString()}>
                         <button
                             className={join(
@@ -78,6 +78,8 @@ const SideBar = () => {
                             onClick={() => onMenuButtonClicked(i)}
                         >
                             {icon}
+
+                            <span>{subject}</span>
                         </button>
                     </li>
                 ))}
