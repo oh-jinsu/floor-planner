@@ -6,20 +6,16 @@ import {
     useRef,
 } from "react";
 import Canvas, { DrawCall } from "./Canvas";
-import { Subject, map } from "rxjs";
-import { EditorContext, State } from "./Editor";
+import { Subject, combineLatest, map } from "rxjs";
+import { EditorContext, State, HoldingObjectState } from "./Editor";
 import { Vector2 } from "../Core/Vector";
-import {
-    BASE_GRID_SPACE,
-    DEFAULT_HANDLE_RADIUS,
-    BASE_SCALE_UNIT,
-} from "../Constants/Editor";
-import { distance } from "../Core/Math";
+import { BASE_GRID_SPACE, BASE_SCALE_UNIT } from "../Constants/Editor";
+import { distance, scale } from "../Core/Math";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
 
-    const { state } = useContext(EditorContext);
+    const { state, holdingObject } = useContext(EditorContext);
 
     const drawGrid = useCallback(
         (context: CanvasRenderingContext2D) => {
@@ -64,7 +60,7 @@ const Painter: FunctionComponent = () => {
                 context.lineTo(height * 0.5, -y);
             }
 
-            context.strokeBy("#eee");
+            context.strokeBy("#eee", 1);
         },
         [state]
     );
@@ -79,7 +75,7 @@ const Painter: FunctionComponent = () => {
         context.arc(
             x * BASE_SCALE_UNIT,
             y * BASE_SCALE_UNIT,
-            DEFAULT_HANDLE_RADIUS,
+            radius,
             0,
             Math.PI * 2
         );
@@ -210,8 +206,48 @@ const Painter: FunctionComponent = () => {
         []
     );
 
+    const drawHoldingObject = useCallback(
+        (
+            context: CanvasRenderingContext2D,
+            holdingObject: HoldingObjectState,
+            lineWidth: number
+        ) => {
+            const { position } = holdingObject;
+
+            if (!position) {
+                return;
+            }
+
+            context.beginPath();
+
+            const origin = scale(BASE_SCALE_UNIT, position);
+
+            context.moveTo(origin.x, origin.y);
+
+            context.lineTo(origin.x + BASE_SCALE_UNIT, origin.y);
+
+            context.arc(
+                origin.x + BASE_SCALE_UNIT,
+                origin.y,
+                BASE_SCALE_UNIT,
+                Math.PI * 0.5,
+                Math.PI * 1
+            );
+
+            context.fillBy("#fff");
+
+            context.strokeBy("#777", lineWidth);
+
+            context.closePath();
+        },
+        []
+    );
+
     const toDrawCall = useCallback(
-        ({ vertices, option }: State) => {
+        ([{ vertices, option }, holdingObject]: [
+            State,
+            HoldingObjectState | undefined
+        ]) => {
             return (context: CanvasRenderingContext2D) => {
                 context.clearScreen();
 
@@ -222,14 +258,20 @@ const Painter: FunctionComponent = () => {
                 drawHandles(context, vertices, option.handleRadius);
 
                 drawLengths(context, vertices);
+
+                if (holdingObject) {
+                    drawHoldingObject(context, holdingObject, option.lineWidth);
+                }
             };
         },
-        [drawHandles, drawLengths, drawGrid]
+        [drawHandles, drawLengths, drawGrid, drawHoldingObject]
     );
 
     useEffect(() => {
-        state.pipe(map(toDrawCall)).subscribe(queue.current);
-    }, [state, queue, toDrawCall]);
+        combineLatest([state, holdingObject])
+            .pipe(map(toDrawCall))
+            .subscribe(queue.current);
+    }, [state, holdingObject, queue, toDrawCall]);
 
     return <Canvas queue={queue.current} />;
 };

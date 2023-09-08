@@ -5,14 +5,16 @@ import {
 } from "react-icons/md";
 import styles from "./Sidebar.module.css";
 import { join } from "../Functions/Element";
-import { ReactNode, useState } from "react";
+import { ReactNode, useContext, useState } from "react";
+import { EditorContext } from "./Editor";
 
 export type SideBarState = {
     menus: {
         subject: string;
         icon: ReactNode;
         items: {
-            icon: ReactNode;
+            id: string;
+            src: string;
             name: string;
         }[];
     }[];
@@ -20,6 +22,8 @@ export type SideBarState = {
 };
 
 const SideBar = () => {
+    const { setHoldingObject } = useContext(EditorContext);
+
     const [state, setState] = useState<SideBarState>({
         menus: [
             {
@@ -27,7 +31,8 @@ const SideBar = () => {
                 icon: <MdOutlineDoorFront size={28} />,
                 items: [
                     {
-                        icon: <MdOutlineDoorFront size={30} />,
+                        id: "door",
+                        src: "/images/door.jpg",
                         name: "문",
                     },
                 ],
@@ -50,6 +55,12 @@ const SideBar = () => {
             ...state,
             selected: i === state.selected ? undefined : i,
         }));
+    };
+
+    const onItemDragStart = (obj: string) => {
+        setHoldingObject({
+            id: obj,
+        });
     };
 
     const { menus, selected } = state;
@@ -81,13 +92,15 @@ const SideBar = () => {
                     ) : (
                         <ul className={styles.items}>
                             {state.menus[selected].items.map(
-                                ({ icon, name }, i) => (
-                                    <li
-                                        key={i.toString()}
-                                        className={styles.item}
-                                    >
-                                        <button className={styles.figure}>
-                                            {icon}
+                                ({ id, src, name }) => (
+                                    <li key={id} className={styles.item}>
+                                        <button
+                                            className={styles.button}
+                                            onMouseDown={() =>
+                                                onItemDragStart(id)
+                                            }
+                                        >
+                                            <img src={src} alt={name} />
                                         </button>
                                         <h4 className={styles.name}>{name}</h4>
                                     </li>

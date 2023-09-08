@@ -8,6 +8,7 @@ import { Vector2 } from "../Core/Vector";
 import { clone } from "../Functions/Object";
 import {
     BASE_GRID_SPACE,
+    BASE_SCALE_UNIT,
     DEFAULT_HANDLE_RADIUS,
     DEFAULT_LINE_WIDTH,
     DEFAULT_SHORT_CLICK_THRESHOLD,
@@ -19,6 +20,7 @@ import { arrayBufferToString } from "../Functions/Buffer";
 import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
 import SideBar from "./Sidebar";
+import { isOnLine, nearestOnLine } from "../Core/Math";
 
 export type Option = {
     snapping: boolean;
@@ -34,12 +36,19 @@ export type State = {
     vertices: Vector2[];
 };
 
+export type HoldingObjectState = {
+    id: string;
+    position?: Vector2;
+};
+
 export type EditorContextProps = {
     state: BehaviorSubject<State>;
     memory: BehaviorSubject<State[]>;
+    holdingObject: BehaviorSubject<HoldingObjectState | undefined>;
     addVertex: (i: number, position: Vector2) => boolean;
     moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
+    moveObject: (position: Vector2) => boolean;
     clean: () => void;
     capture: () => void;
     serialize: () => Blob;
@@ -47,6 +56,7 @@ export type EditorContextProps = {
     undo: () => void;
     redo: () => void;
     changeOption: (option: Partial<Option>) => void;
+    setHoldingObject: (holdingObject?: HoldingObjectState) => void;
 };
 
 export const EditorContext = createContext<EditorContextProps>({} as any);
@@ -71,6 +81,10 @@ const Editor: FunctionComponent = () => {
     );
 
     const refMemoryPointer = useRef(0);
+
+    const refHoldingObject = useRef(
+        new BehaviorSubject<HoldingObjectState | undefined>(undefined)
+    );
 
     const initialize = (state: State) => {
         refState.current.next(state);
@@ -139,6 +153,42 @@ const Editor: FunctionComponent = () => {
         refState.current.next({
             ...state,
             vertices,
+        });
+
+        return true;
+    };
+
+    const moveObject = (position: Vector2) => {
+        const holdingObject = currentValue(refHoldingObject);
+
+        if (!holdingObject) {
+            return false;
+        }
+
+        const { vertices, option } = currentValue(refState);
+
+        if (holdingObject.id === "door") {
+            for (let i = 0; i < vertices.length; i++) {
+                const v1 = vertices[i];
+
+                const v2 = vertices.at(i - 1)!;
+
+                const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
+
+                if (isOnLine(position, v2, v1, r)) {
+                    refHoldingObject.current.next({
+                        ...holdingObject,
+                        position: nearestOnLine(position, v2, v1),
+                    });
+
+                    return true;
+                }
+            }
+        }
+
+        refHoldingObject.current.next({
+            ...holdingObject,
+            position,
         });
 
         return true;
@@ -261,12 +311,18 @@ const Editor: FunctionComponent = () => {
         });
     };
 
+    const setHoldingObject = (obj?: HoldingObjectState) => {
+        refHoldingObject.current.next(obj);
+    };
+
     const value: EditorContextProps = {
         state: refState.current,
         memory: refMemory.current,
+        holdingObject: refHoldingObject.current,
         addVertex,
         moveVertex,
         removeVertex,
+        moveObject,
         clean,
         capture,
         serialize,
@@ -274,6 +330,7 @@ const Editor: FunctionComponent = () => {
         undo,
         redo,
         changeOption,
+        setHoldingObject,
     };
 
     return (

@@ -11,6 +11,7 @@ import { BASE_SCALE_UNIT } from "../Constants/Editor";
 import { distance, isOnLine, scale } from "../Core/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
+import { ViewportContext } from "./Viewport";
 
 type MouseState = {
     timestamp: number;
@@ -25,6 +26,8 @@ export type Props = {
 };
 
 const Control: FunctionComponent<Props> = ({ children }) => {
+    const { refViewport } = useContext(ViewportContext);
+
     const refMouseState = useRef<MouseState>({
         timestamp: 0,
         updated: false,
@@ -32,8 +35,17 @@ const Control: FunctionComponent<Props> = ({ children }) => {
         isDragging: false,
     });
 
-    const { state, addVertex, moveVertex, removeVertex, capture, undo } =
-        useContext(EditorContext);
+    const {
+        state,
+        holdingObject,
+        moveObject,
+        addVertex,
+        moveVertex,
+        removeVertex,
+        capture,
+        undo,
+        setHoldingObject,
+    } = useContext(EditorContext);
 
     const scanVertices = (position: Vector2) => {
         const { vertices, option } = state.getValue();
@@ -72,13 +84,27 @@ const Control: FunctionComponent<Props> = ({ children }) => {
     };
 
     const onMouseMove = (position: Vector2) => {
+        const p = scale(1 / BASE_SCALE_UNIT, position);
+
+        const object = holdingObject.getValue();
+
+        const { current: viewport } = refViewport;
+
+        if (viewport) {
+            viewport.style.cursor = object ? "none" : "default";
+        }
+
+        if (object) {
+            moveObject(p);
+        }
+
         const { holding } = refMouseState.current;
 
         if (holding === undefined) {
             return;
         }
 
-        const dst = moveVertex(holding, scale(1 / BASE_SCALE_UNIT, position));
+        const dst = moveVertex(holding, p);
 
         const { origin } = refMouseState.current;
 
@@ -101,6 +127,10 @@ const Control: FunctionComponent<Props> = ({ children }) => {
         refMouseState.current.isDragging = false;
 
         refMouseState.current.holding = undefined;
+
+        if (holdingObject.getValue() !== undefined) {
+            setHoldingObject();
+        }
 
         if (refMouseState.current.updated) {
             capture();

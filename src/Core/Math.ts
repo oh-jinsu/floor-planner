@@ -40,3 +40,29 @@ export const isOnLine = (
 
     return Math.pow(mx, 2) + Math.pow(my, 2) < l * 0.25;
 };
+
+export const nearestOnLine = (
+    { x: px, y: py }: Vector2,
+    { x: x1, y: y1 }: Vector2,
+    { x: x2, y: y2 }: Vector2,
+): Vector2 => {
+    const v = { x: x2 - x1, y: y2 - y1 };
+
+    const w = { x: px - x1, y: py - y1 };
+
+    const c1 = w.x * v.x + w.y * v.y;
+
+    const c2 = v.x * v.x + v.y * v.y;
+
+    if (c2 === 0) return { x: x1, y: y1 };
+
+    const b = c1 / c2;
+
+    const result = { x: x1 + b * v.x, y: y1 + b * v.y };
+
+    if (b >= 0 && b <= 1) return result;
+
+    if (b < 0) return {x: x1, y: y1};
+
+    return {x: x2, y: y2 };
+}
