@@ -10,6 +10,10 @@ export const BASE_LINE_WIDTH = 2;
 
 export const BASE_BORDER_WIDTH = 3;
 
+export const DEFAULT_LINE_COLOR = "#444";
+
+export const DEFAULT_MEASURE_COLOR = "#ccc";
+
 export const DEFAULT_HANDLE_RADIUS = 5;
 
 export const DEFAULT_SPARE_SCALE = 3;

@@ -10,7 +10,9 @@ import {
     BASE_GRID_SPACE,
     BASE_SCALE_UNIT,
     DEFAULT_HANDLE_RADIUS,
+    DEFAULT_LINE_COLOR,
     DEFAULT_LINE_WIDTH,
+    DEFAULT_MEASURE_COLOR,
     DEFAULT_SHORT_CLICK_THRESHOLD,
     DEFAULT_SPARE_SCALE,
     INITIAL_VERTICES,
@@ -27,7 +29,9 @@ export type Option = {
     gridSize: number;
     handleRadius: number;
     spareScale: number;
+    lineColor: string;
     lineWidth: number;
+    measureColor: string;
     shortClickThreshold: number;
 };
 
@@ -69,7 +73,9 @@ const Editor: FunctionComponent = () => {
                 gridSize: BASE_GRID_SPACE,
                 handleRadius: DEFAULT_HANDLE_RADIUS,
                 spareScale: DEFAULT_SPARE_SCALE,
+                lineColor: DEFAULT_LINE_COLOR,
                 lineWidth: DEFAULT_LINE_WIDTH,
+                measureColor: DEFAULT_MEASURE_COLOR,
                 shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
             },
             vertices: INITIAL_VERTICES,

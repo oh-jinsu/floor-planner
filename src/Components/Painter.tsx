@@ -7,7 +7,7 @@ import {
 } from "react";
 import Canvas, { DrawCall } from "./Canvas";
 import { Subject, combineLatest, map } from "rxjs";
-import { EditorContext, State, HoldingObjectState } from "./Editor";
+import { EditorContext, State, HoldingObjectState, Option } from "./Editor";
 import { Vector2 } from "../Types/Vector";
 import {
     BASE_BORDER_WIDTH,
@@ -73,21 +73,21 @@ const Painter: FunctionComponent = () => {
     const drawHandle = (
         context: CanvasRenderingContext2D,
         { x, y }: Vector2,
-        radius: number
+        { handleRadius, lineColor }: Option
     ) => {
         context.beginPath();
 
         context.arc(
             x * BASE_SCALE_UNIT,
             y * BASE_SCALE_UNIT,
-            radius,
+            handleRadius,
             0,
             Math.PI * 2
         );
 
         context.fillBy("#fff");
 
-        context.strokeBy("#777", BASE_BORDER_WIDTH);
+        context.strokeBy(lineColor, BASE_BORDER_WIDTH);
 
         context.closePath();
     };
@@ -96,10 +96,10 @@ const Painter: FunctionComponent = () => {
         (
             context: CanvasRenderingContext2D,
             vertices: Vector2[],
-            radius: number
+            option: Option
         ) => {
             for (let i = 0; i < vertices.length; i++) {
-                drawHandle(context, vertices[i], radius);
+                drawHandle(context, vertices[i], option);
             }
         },
         []
@@ -108,7 +108,7 @@ const Painter: FunctionComponent = () => {
     const drawWalls = (
         context: CanvasRenderingContext2D,
         vertices: Vector2[],
-        lineWidth: number
+        { lineWidth, lineColor }: Option
     ) => {
         if (vertices.length === 0) {
             return;
@@ -135,13 +135,14 @@ const Painter: FunctionComponent = () => {
 
         context.fillBy("#fff");
 
-        context.strokeBy("#777", lineWidth);
+        context.strokeBy(lineColor, lineWidth);
 
         context.closePath();
     };
 
-    const drawLength = (
+    const drawMeasure = (
         context: CanvasRenderingContext2D,
+        { measureColor }: Option,
         { x: x1, y: y1 }: Vector2,
         { x: x2, y: y2 }: Vector2
     ) => {
@@ -183,7 +184,7 @@ const Painter: FunctionComponent = () => {
 
         context.lineTo(ex + adx, ey + ady);
 
-        context.strokeBy("#bbb", 1);
+        context.strokeBy(measureColor, 1);
 
         context.closePath();
 
@@ -200,14 +201,18 @@ const Painter: FunctionComponent = () => {
         );
     };
 
-    const drawLengths = useCallback(
-        (context: CanvasRenderingContext2D, vertices: Vector2[]) => {
+    const drawMeasures = useCallback(
+        (
+            context: CanvasRenderingContext2D,
+            option: Option,
+            vertices: Vector2[]
+        ) => {
             for (let i = 0; i < vertices.length; i++) {
                 const v1 = vertices.at(i - 1)!;
 
                 const v2 = vertices.at(i)!;
 
-                drawLength(context, v1, v2);
+                drawMeasure(context, option, v1, v2);
             }
         },
         []
@@ -217,7 +222,7 @@ const Painter: FunctionComponent = () => {
         (
             context: CanvasRenderingContext2D,
             holdingObject: HoldingObjectState,
-            lineWidth: number
+            { lineWidth, lineColor }: Option
         ) => {
             const { id, position } = holdingObject;
 
@@ -251,7 +256,7 @@ const Painter: FunctionComponent = () => {
 
                     context.fillBy("#fff");
 
-                    context.strokeBy("#777", BASE_LINE_WIDTH);
+                    context.strokeBy(lineColor, BASE_LINE_WIDTH);
 
                     context.moveTo(x1 + BASE_SCALE_UNIT - adx, y1 - ady);
 
@@ -263,7 +268,7 @@ const Painter: FunctionComponent = () => {
                         Math.PI * 1
                     );
 
-                    context.strokeBy("#777", BASE_LINE_WIDTH);
+                    context.strokeBy(lineColor, BASE_LINE_WIDTH);
 
                     context.closePath();
 
@@ -283,18 +288,18 @@ const Painter: FunctionComponent = () => {
 
                 drawGrid(context);
 
-                drawWalls(context, vertices, option.lineWidth);
+                drawWalls(context, vertices, option);
 
                 if (holdingObject) {
-                    drawHoldingObject(context, holdingObject, option.lineWidth);
+                    drawHoldingObject(context, holdingObject, option);
                 }
 
-                drawHandles(context, vertices, option.handleRadius);
+                drawHandles(context, vertices, option);
 
-                drawLengths(context, vertices);
+                drawMeasures(context, option, vertices);
             };
         },
-        [drawHandles, drawLengths, drawGrid, drawHoldingObject]
+        [drawHandles, drawMeasures, drawGrid, drawHoldingObject]
     );
 
     useEffect(() => {
