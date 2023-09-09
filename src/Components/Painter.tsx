@@ -7,7 +7,7 @@ import {
 } from "react";
 import Canvas, { DrawCall } from "./Canvas";
 import { Subject, combineLatest, map } from "rxjs";
-import { EditorContext, State, HoldingObjectState, Option } from "./Editor";
+import { EditorContext, HoldingObjectState } from "./Editor";
 import { Vector2 } from "../Types/Vector";
 import {
     BASE_BORDER_WIDTH,
@@ -16,6 +16,8 @@ import {
     BASE_SCALE_UNIT,
 } from "../Constants/Editor";
 import { distance, scale } from "../Functions/Math";
+import { EditorOption } from "../Types/EditorOption";
+import { EditorState } from "../Types/EditorState";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
@@ -73,7 +75,7 @@ const Painter: FunctionComponent = () => {
     const drawHandle = (
         context: CanvasRenderingContext2D,
         { x, y }: Vector2,
-        { handleRadius, lineColor }: Option
+        { handleRadius, lineColor }: EditorOption
     ) => {
         context.beginPath();
 
@@ -96,7 +98,7 @@ const Painter: FunctionComponent = () => {
         (
             context: CanvasRenderingContext2D,
             vertices: Vector2[],
-            option: Option
+            option: EditorOption
         ) => {
             for (let i = 0; i < vertices.length; i++) {
                 drawHandle(context, vertices[i], option);
@@ -108,7 +110,7 @@ const Painter: FunctionComponent = () => {
     const drawWalls = (
         context: CanvasRenderingContext2D,
         vertices: Vector2[],
-        { lineWidth, lineColor }: Option
+        { lineWidth, lineColor }: EditorOption
     ) => {
         if (vertices.length === 0) {
             return;
@@ -142,7 +144,7 @@ const Painter: FunctionComponent = () => {
 
     const drawMeasure = (
         context: CanvasRenderingContext2D,
-        { measureColor }: Option,
+        { measureColor }: EditorOption,
         { x: x1, y: y1 }: Vector2,
         { x: x2, y: y2 }: Vector2
     ) => {
@@ -204,7 +206,7 @@ const Painter: FunctionComponent = () => {
     const drawMeasures = useCallback(
         (
             context: CanvasRenderingContext2D,
-            option: Option,
+            option: EditorOption,
             vertices: Vector2[]
         ) => {
             for (let i = 0; i < vertices.length; i++) {
@@ -222,7 +224,7 @@ const Painter: FunctionComponent = () => {
         (
             context: CanvasRenderingContext2D,
             holdingObject: HoldingObjectState,
-            { lineWidth, lineColor }: Option
+            { lineWidth, lineColor }: EditorOption
         ) => {
             const { id, position } = holdingObject;
 
@@ -280,7 +282,7 @@ const Painter: FunctionComponent = () => {
 
     const toDrawCall = useCallback(
         ([{ vertices, option }, holdingObject]: [
-            State,
+            EditorState,
             HoldingObjectState | undefined
         ]) => {
             return (context: CanvasRenderingContext2D) => {

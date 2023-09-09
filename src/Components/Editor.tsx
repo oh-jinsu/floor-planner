@@ -23,22 +23,8 @@ import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
 import SideBar from "./Sidebar";
 import { isOnLine, nearestOnLine } from "../Functions/Math";
-
-export type Option = {
-    snapping: boolean;
-    gridSize: number;
-    handleRadius: number;
-    spareScale: number;
-    lineColor: string;
-    lineWidth: number;
-    measureColor: string;
-    shortClickThreshold: number;
-};
-
-export type State = {
-    option: Option;
-    vertices: Vector2[];
-};
+import { EditorState } from "../Types/EditorState";
+import { EditorOption } from "../Types/EditorOption";
 
 export type HoldingObjectState = {
     id: string;
@@ -46,8 +32,8 @@ export type HoldingObjectState = {
 };
 
 export type EditorContextProps = {
-    state: BehaviorSubject<State>;
-    memory: BehaviorSubject<State[]>;
+    state: BehaviorSubject<EditorState>;
+    memory: BehaviorSubject<EditorState[]>;
     holdingObject: BehaviorSubject<HoldingObjectState | undefined>;
     addVertex: (i: number, position: Vector2) => boolean;
     moveVertex: (i: number, position: Vector2) => Vector2;
@@ -59,7 +45,7 @@ export type EditorContextProps = {
     deserialize: (blob: Blob) => void;
     undo: () => void;
     redo: () => void;
-    changeOption: (option: Partial<Option>) => void;
+    changeOption: (option: Partial<EditorOption>) => void;
     setHoldingObject: (holdingObject?: HoldingObjectState) => void;
 };
 
@@ -67,7 +53,7 @@ export const EditorContext = createContext<EditorContextProps>({} as any);
 
 const Editor: FunctionComponent = () => {
     const refState = useRef(
-        new BehaviorSubject<State>({
+        new BehaviorSubject<EditorState>({
             option: {
                 snapping: true,
                 gridSize: BASE_GRID_SPACE,
@@ -83,7 +69,7 @@ const Editor: FunctionComponent = () => {
     );
 
     const refMemory = useRef(
-        new BehaviorSubject<State[]>([clone(currentValue(refState))])
+        new BehaviorSubject<EditorState[]>([clone(currentValue(refState))])
     );
 
     const refMemoryPointer = useRef(0);
@@ -92,7 +78,7 @@ const Editor: FunctionComponent = () => {
         new BehaviorSubject<HoldingObjectState | undefined>(undefined)
     );
 
-    const initialize = (state: State) => {
+    const initialize = (state: EditorState) => {
         refState.current.next(state);
 
         refMemory.current.next([clone(state)]);
@@ -301,7 +287,7 @@ const Editor: FunctionComponent = () => {
         pointCurrentMemory();
     };
 
-    const changeOption = (option: Partial<Option>) => {
+    const changeOption = (option: Partial<EditorOption>) => {
         if (option.gridSize !== undefined && option.gridSize < 10) {
             return;
         }
