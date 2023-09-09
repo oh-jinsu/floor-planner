@@ -8,14 +8,14 @@ import {
 import Canvas, { DrawCall } from "./Canvas";
 import { Subject, combineLatest, map } from "rxjs";
 import { EditorContext, State, HoldingObjectState } from "./Editor";
-import { Vector2 } from "../Core/Vector";
+import { Vector2 } from "../Types/Vector";
 import {
     BASE_BORDER_WIDTH,
     BASE_GRID_SPACE,
     BASE_LINE_WIDTH,
     BASE_SCALE_UNIT,
 } from "../Constants/Editor";
-import { distance, scale } from "../Core/Math";
+import { distance, scale } from "../Functions/Math";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());

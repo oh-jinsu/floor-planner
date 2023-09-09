@@ -5,7 +5,7 @@ import {
     useContext,
     useEffect,
 } from "react";
-import { Vector2 } from "../Core/Vector";
+import { Vector2 } from "../Types/Vector";
 import { ViewportContext } from "./Viewport";
 import { getOffset } from "../Functions/Element";
 import { BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH } from "../Constants/Editor";

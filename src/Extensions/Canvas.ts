@@ -1,4 +1,4 @@
-import { Vector2 } from "../Core/Vector";
+import { Vector2 } from "../Types/Vector";
 
 declare global {
     interface CanvasRenderingContext2D {

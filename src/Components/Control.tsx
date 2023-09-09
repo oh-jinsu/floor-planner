@@ -6,9 +6,9 @@ import {
     useEffect,
     useRef,
 } from "react";
-import { Vector2 } from "../Core/Vector";
+import { Vector2 } from "../Types/Vector";
 import { BASE_SCALE_UNIT } from "../Constants/Editor";
-import { distance, isOnLine, scale } from "../Core/Math";
+import { distance, isOnLine, scale } from "../Functions/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
 import { ViewportContext } from "./Viewport";

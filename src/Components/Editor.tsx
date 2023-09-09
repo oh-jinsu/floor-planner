@@ -4,7 +4,7 @@ import Control from "./Control";
 import { BehaviorSubject } from "rxjs";
 import Painter from "./Painter";
 import { createContext } from "react";
-import { Vector2 } from "../Core/Vector";
+import { Vector2 } from "../Types/Vector";
 import { clone } from "../Functions/Object";
 import {
     BASE_GRID_SPACE,
@@ -20,7 +20,7 @@ import { arrayBufferToString } from "../Functions/Buffer";
 import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
 import SideBar from "./Sidebar";
-import { isOnLine, nearestOnLine } from "../Core/Math";
+import { isOnLine, nearestOnLine } from "../Functions/Math";
 
 export type Option = {
     snapping: boolean;
