@@ -7,17 +7,17 @@ import {
 } from "react";
 import Canvas, { DrawCall } from "./Canvas";
 import { Subject, combineLatest, map } from "rxjs";
-import { EditorContext, HoldingObjectState } from "./Editor";
+import { EditorContext, HoldingObject } from "./Editor";
 import { Vector2 } from "../Types/Vector";
 import {
     BASE_BORDER_WIDTH,
-    BASE_GRID_SPACE,
     BASE_LINE_WIDTH,
     BASE_SCALE_UNIT,
 } from "../Constants/Editor";
 import { distance, scale } from "../Functions/Math";
 import { EditorOption } from "../Types/EditorOption";
 import { EditorState } from "../Types/EditorState";
+import { Line } from "../Types/Line";
 
 const Painter: FunctionComponent = () => {
     const queue = useRef(new Subject<DrawCall>());
@@ -26,14 +26,13 @@ const Painter: FunctionComponent = () => {
 
     const drawGrid = useCallback(
         (context: CanvasRenderingContext2D) => {
-            const gridScale =
-                state.getValue().option.gridSize / BASE_GRID_SPACE;
+            const { gridSpace } = state.getValue().option;
 
             context.beginPath();
 
             const { width } = context.canvas;
 
-            for (let x = 0; x < width * 0.5; x += BASE_SCALE_UNIT * gridScale) {
+            for (let x = 0; x < width * 0.5; x += gridSpace * BASE_SCALE_UNIT) {
                 context.moveTo(x, width * -0.5);
 
                 context.lineTo(x, width * 0.5);
@@ -52,7 +51,7 @@ const Painter: FunctionComponent = () => {
             for (
                 let y = 0;
                 y < height * 0.5;
-                y += BASE_SCALE_UNIT * gridScale
+                y += gridSpace * BASE_SCALE_UNIT
             ) {
                 context.moveTo(height * -0.5, y);
 
@@ -107,44 +106,59 @@ const Painter: FunctionComponent = () => {
         []
     );
 
-    const drawWalls = (
+    const drawWall = (
         context: CanvasRenderingContext2D,
         vertices: Vector2[],
-        { lineWidth, lineColor }: EditorOption
+        { anchor }: Line
     ) => {
-        if (vertices.length === 0) {
-            return;
-        }
-
-        context.beginPath();
-
-        context.moveTo(
-            vertices[0].x * BASE_SCALE_UNIT,
-            vertices[0].y * BASE_SCALE_UNIT
-        );
-
-        for (let i = 1; i < vertices.length; i++) {
-            context.lineTo(
-                vertices[i].x * BASE_SCALE_UNIT,
-                vertices[i].y * BASE_SCALE_UNIT
-            );
-        }
+        const [i1, i2] = anchor;
 
         context.lineTo(
-            vertices[0].x * BASE_SCALE_UNIT,
-            vertices[0].y * BASE_SCALE_UNIT
+            vertices[i1].x * BASE_SCALE_UNIT,
+            vertices[i1].y * BASE_SCALE_UNIT
         );
 
-        context.fillBy("#fff");
-
-        context.strokeBy(lineColor, lineWidth);
-
-        context.closePath();
+        context.lineTo(
+            vertices[i2].x * BASE_SCALE_UNIT,
+            vertices[i2].y * BASE_SCALE_UNIT
+        );
     };
+
+    const drawWalls = useCallback(
+        (
+            context: CanvasRenderingContext2D,
+            vertices: Vector2[],
+            lines: Line[],
+            { wallLineWidth, lineColor }: EditorOption
+        ) => {
+            if (vertices.length === 0) {
+                return;
+            }
+
+            context.beginPath();
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                drawWall(context, vertices, line);
+            }
+
+            context.fillBy("#fff");
+
+            context.strokeBy(lineColor, wallLineWidth);
+
+            context.closePath();
+        },
+        []
+    );
 
     const drawMeasure = (
         context: CanvasRenderingContext2D,
-        { measureColor }: EditorOption,
+        {
+            measureColor,
+            measureCalibartion,
+            measureDistanceRatio,
+        }: EditorOption,
         { x: x1, y: y1 }: Vector2,
         { x: x2, y: y2 }: Vector2
     ) => {
@@ -158,9 +172,11 @@ const Painter: FunctionComponent = () => {
 
         const theta = Math.atan2(y2 - y1, x2 - x1);
 
-        const dx = Math.cos(theta - Math.PI * 0.5) * 0.5;
+        const dx =
+            Math.cos(theta - Math.PI * 0.5) * 1000 * measureDistanceRatio;
 
-        const dy = Math.sin(theta - Math.PI * 0.5) * 0.5;
+        const dy =
+            Math.sin(theta - Math.PI * 0.5) * 1000 * measureDistanceRatio;
 
         const sx = (x1 + dx) * BASE_SCALE_UNIT;
 
@@ -174,9 +190,9 @@ const Painter: FunctionComponent = () => {
 
         context.lineTo(ex, ey);
 
-        const adx = Math.cos(theta - Math.PI * 0.5) * BASE_SCALE_UNIT * 0.2;
+        const adx = dx * 0.4 * BASE_SCALE_UNIT;
 
-        const ady = Math.sin(theta - Math.PI * 0.5) * BASE_SCALE_UNIT * 0.2;
+        const ady = dy * 0.4 * BASE_SCALE_UNIT;
 
         context.moveTo(sx - adx, sy - ady);
 
@@ -197,7 +213,7 @@ const Painter: FunctionComponent = () => {
         context.setTextStyle("15px serif", "#000", "center", "middle");
 
         context.fillText(
-            `${Math.round(l * BASE_GRID_SPACE)}`,
+            `${Math.round(l * measureCalibartion)}`,
             mx * BASE_SCALE_UNIT,
             my * BASE_SCALE_UNIT
         );
@@ -206,13 +222,18 @@ const Painter: FunctionComponent = () => {
     const drawMeasures = useCallback(
         (
             context: CanvasRenderingContext2D,
-            option: EditorOption,
-            vertices: Vector2[]
+            vertices: Vector2[],
+            lines: Line[],
+            option: EditorOption
         ) => {
-            for (let i = 0; i < vertices.length; i++) {
-                const v1 = vertices.at(i - 1)!;
+            for (let i = 0; i < lines.length; i++) {
+                const { anchor } = lines[i];
 
-                const v2 = vertices.at(i)!;
+                const [i1, i2] = anchor;
+
+                const v1 = vertices[i1];
+
+                const v2 = vertices[i2];
 
                 drawMeasure(context, option, v1, v2);
             }
@@ -223,8 +244,8 @@ const Painter: FunctionComponent = () => {
     const drawHoldingObject = useCallback(
         (
             context: CanvasRenderingContext2D,
-            holdingObject: HoldingObjectState,
-            { lineWidth, lineColor }: EditorOption
+            holdingObject: HoldingObject,
+            { wallLineWidth, lineColor }: EditorOption
         ) => {
             const { id, position } = holdingObject;
 
@@ -236,38 +257,59 @@ const Painter: FunctionComponent = () => {
                 case "door":
                     context.beginPath();
 
-                    const { x: x1, y: y1 } = scale(BASE_SCALE_UNIT, position);
+                    const { anchor, length } = holdingObject;
 
-                    const adx =
-                        Math.cos(-Math.PI * 0.5) *
-                        (0.5 * lineWidth - BASE_LINE_WIDTH * 0.5);
+                    const [v1, v2] = (() => {
+                        if (anchor) {
+                            const v1 = scale(BASE_SCALE_UNIT, anchor.v1);
 
-                    const ady =
-                        Math.sin(-Math.PI * 0.5) *
-                        (0.5 * lineWidth - BASE_LINE_WIDTH * 0.5);
+                            const v2 = scale(BASE_SCALE_UNIT, anchor.v2);
 
-                    context.moveTo(x1 + adx, y1 + ady);
+                            return [v1, v2];
+                        }
 
-                    context.lineTo(x1 + BASE_SCALE_UNIT + adx, y1 + ady);
+                        const v1 = scale(BASE_SCALE_UNIT, position);
 
-                    context.lineTo(x1 + BASE_SCALE_UNIT - adx, y1 - ady);
+                        const v2 = {
+                            x: v1.x + length * BASE_SCALE_UNIT,
+                            y: v1.y,
+                        };
 
-                    context.lineTo(x1 - adx, y1 - ady);
+                        return [v1, v2];
+                    })();
 
-                    context.lineTo(x1 + adx, y1 + ady);
+                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+
+                    const dx = Math.sin(theta * Math.PI) * wallLineWidth * 0.5;
+
+                    const dy = Math.cos(theta * Math.PI) * wallLineWidth * 0.5;
+
+                    context.moveTo(v1.x - dx, v1.y - dy);
+
+                    context.lineTo(v1.x + dx, v1.y + dy);
+
+                    context.lineTo(v2.x + dx, v2.y + dy);
+
+                    context.lineTo(v2.x - dx, v2.y - dy);
+
+                    context.lineTo(v1.x - dx, v1.y - dy);
 
                     context.fillBy("#fff");
 
                     context.strokeBy(lineColor, BASE_LINE_WIDTH);
 
-                    context.moveTo(x1 + BASE_SCALE_UNIT - adx, y1 - ady);
+                    const px = v1.x - dx;
+
+                    const py = v1.y - dy;
+
+                    context.moveTo(px, py);
 
                     context.arc(
-                        x1 + BASE_SCALE_UNIT - adx,
-                        y1 - ady,
-                        BASE_SCALE_UNIT,
-                        Math.PI * 0.5,
-                        Math.PI * 1
+                        px,
+                        py,
+                        length * BASE_SCALE_UNIT,
+                        theta + Math.PI * 1.5,
+                        theta + Math.PI * 2
                     );
 
                     context.strokeBy(lineColor, BASE_LINE_WIDTH);
@@ -281,16 +323,16 @@ const Painter: FunctionComponent = () => {
     );
 
     const toDrawCall = useCallback(
-        ([{ vertices, option }, holdingObject]: [
+        ([{ vertices, lines, option }, holdingObject]: [
             EditorState,
-            HoldingObjectState | undefined
+            HoldingObject | undefined
         ]) => {
             return (context: CanvasRenderingContext2D) => {
                 context.clearScreen();
 
                 drawGrid(context);
 
-                drawWalls(context, vertices, option);
+                drawWalls(context, vertices, lines, option);
 
                 if (holdingObject) {
                     drawHoldingObject(context, holdingObject, option);
@@ -298,10 +340,10 @@ const Painter: FunctionComponent = () => {
 
                 drawHandles(context, vertices, option);
 
-                drawMeasures(context, option, vertices);
+                drawMeasures(context, vertices, lines, option);
             };
         },
-        [drawHandles, drawMeasures, drawGrid, drawHoldingObject]
+        [drawHandles, drawMeasures, drawGrid, drawHoldingObject, drawWalls]
     );
 
     useEffect(() => {

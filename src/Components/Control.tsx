@@ -8,7 +8,7 @@ import {
 } from "react";
 import { Vector2 } from "../Types/Vector";
 import { BASE_SCALE_UNIT } from "../Constants/Editor";
-import { distance, isOnLine, scale } from "../Functions/Math";
+import { distance, isNearFromLine, scale } from "../Functions/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
 import { ViewportContext } from "./Viewport";
@@ -48,14 +48,14 @@ const Control: FunctionComponent<Props> = ({ children }) => {
     } = useContext(EditorContext);
 
     const scanVertices = (position: Vector2) => {
-        const { vertices, option } = state.getValue();
+        const { vertices, lines, option } = state.getValue();
 
-        const { handleRadius, lineWidth, spareScale } = option;
+        const { handleRadius, wallLineWidth, spareScale } = option;
 
         for (let i = 0; i < vertices.length; i++) {
-            const v1 = scale(BASE_SCALE_UNIT, vertices[i]);
+            const v = scale(BASE_SCALE_UNIT, vertices[i]);
 
-            if (distance(position, v1) < handleRadius * spareScale) {
+            if (distance(position, v) < handleRadius * spareScale) {
                 refMouseState.current.holding = i;
 
                 refMouseState.current.origin = {
@@ -65,18 +65,27 @@ const Control: FunctionComponent<Props> = ({ children }) => {
 
                 return;
             }
+        }
 
-            const v2 = scale(BASE_SCALE_UNIT, vertices.at(i - 1)!);
+        for (let i = 0; i < lines.length; i++) {
+            const { type, anchor } = lines[i];
 
-            if (isOnLine(position, v2, v1, lineWidth * spareScale)) {
-                const updated = addVertex(
+            if (type !== "wall") {
+                continue;
+            }
+
+            const v1 = scale(BASE_SCALE_UNIT, vertices[anchor[0]]);
+
+            const v2 = scale(BASE_SCALE_UNIT, vertices[anchor[1]]);
+
+            if (isNearFromLine(position, v1, v2, wallLineWidth * spareScale)) {
+                refMouseState.current.holding = addVertex(
                     i,
+                    scale(1 / BASE_SCALE_UNIT, position),
                     scale(1 / BASE_SCALE_UNIT, position)
-                );
+                )[0];
 
-                refMouseState.current.updated = updated;
-
-                refMouseState.current.holding = i;
+                refMouseState.current.updated = true;
 
                 return;
             }
@@ -129,6 +138,8 @@ const Control: FunctionComponent<Props> = ({ children }) => {
         refMouseState.current.holding = undefined;
 
         if (holdingObject.getValue() !== undefined) {
+            capture();
+
             setHoldingObject();
         }
 

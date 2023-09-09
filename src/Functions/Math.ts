@@ -14,7 +14,7 @@ export const distance = (
     return Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
 };
 
-export const isOnLine = (
+export const isNearFromLine = (
     { x: px, y: py }: Vector2,
     { x: x1, y: y1 }: Vector2,
     { x: x2, y: y2 }: Vector2,
@@ -58,11 +58,13 @@ export const nearestOnLine = (
 
     const b = c1 / c2;
 
-    const result = { x: x1 + b * v.x, y: y1 + b * v.y };
+    if (b >= 0 && b <= 1) {
+        return { x: x1 + b * v.x, y: y1 + b * v.y }
+    };
 
-    if (b >= 0 && b <= 1) return result;
-
-    if (b < 0) return {x: x1, y: y1};
+    if (b < 0) {
+        return {x: x1, y: y1 }
+    };
 
     return {x: x2, y: y2 };
 }

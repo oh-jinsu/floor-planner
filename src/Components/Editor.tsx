@@ -7,35 +7,45 @@ import { createContext } from "react";
 import { Vector2 } from "../Types/Vector";
 import { clone } from "../Functions/Object";
 import {
-    BASE_GRID_SPACE,
+    DEFAULT_GRID_SPACE,
     BASE_SCALE_UNIT,
     DEFAULT_HANDLE_RADIUS,
     DEFAULT_LINE_COLOR,
-    DEFAULT_LINE_WIDTH,
+    DEFAULT_WALL_LINE_WIDTH,
+    DEFAULT_MEASURE_CALIBRATION,
     DEFAULT_MEASURE_COLOR,
     DEFAULT_SHORT_CLICK_THRESHOLD,
     DEFAULT_SPARE_SCALE,
     INITIAL_VERTICES,
+    DEFAULT_MEASURE_DISTANCE_RATIO,
+    INITIAL_LINES,
 } from "../Constants/Editor";
 import { currentValue } from "../Functions/React";
 import { arrayBufferToString } from "../Functions/Buffer";
 import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
 import SideBar from "./Sidebar";
-import { isOnLine, nearestOnLine } from "../Functions/Math";
+import { isNearFromLine, nearestOnLine } from "../Functions/Math";
 import { EditorState } from "../Types/EditorState";
 import { EditorOption } from "../Types/EditorOption";
+import { Line } from "../Types/Line";
 
-export type HoldingObjectState = {
-    id: string;
-    position?: Vector2;
+export type HoldingObject = { position?: Vector2 } & HoldingDoor;
+
+export type HoldingDoor = {
+    id: "door";
+    length: number;
+    anchor?: {
+        v1: Vector2;
+        v2: Vector2;
+    };
 };
 
 export type EditorContextProps = {
     state: BehaviorSubject<EditorState>;
     memory: BehaviorSubject<EditorState[]>;
-    holdingObject: BehaviorSubject<HoldingObjectState | undefined>;
-    addVertex: (i: number, position: Vector2) => boolean;
+    holdingObject: BehaviorSubject<HoldingObject | undefined>;
+    addVertex: (i: number, ...position: Vector2[]) => number[];
     moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
     moveObject: (position: Vector2) => boolean;
@@ -46,7 +56,7 @@ export type EditorContextProps = {
     undo: () => void;
     redo: () => void;
     changeOption: (option: Partial<EditorOption>) => void;
-    setHoldingObject: (holdingObject?: HoldingObjectState) => void;
+    setHoldingObject: (holdingObject?: HoldingObject) => void;
 };
 
 export const EditorContext = createContext<EditorContextProps>({} as any);
@@ -56,15 +66,18 @@ const Editor: FunctionComponent = () => {
         new BehaviorSubject<EditorState>({
             option: {
                 snapping: true,
-                gridSize: BASE_GRID_SPACE,
+                gridSpace: DEFAULT_GRID_SPACE,
                 handleRadius: DEFAULT_HANDLE_RADIUS,
                 spareScale: DEFAULT_SPARE_SCALE,
                 lineColor: DEFAULT_LINE_COLOR,
-                lineWidth: DEFAULT_LINE_WIDTH,
+                wallLineWidth: DEFAULT_WALL_LINE_WIDTH,
                 measureColor: DEFAULT_MEASURE_COLOR,
+                measureCalibartion: DEFAULT_MEASURE_CALIBRATION,
+                measureDistanceRatio: DEFAULT_MEASURE_DISTANCE_RATIO,
                 shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
             },
             vertices: INITIAL_VERTICES,
+            lines: INITIAL_LINES,
         })
     );
 
@@ -75,7 +88,7 @@ const Editor: FunctionComponent = () => {
     const refMemoryPointer = useRef(0);
 
     const refHoldingObject = useRef(
-        new BehaviorSubject<HoldingObjectState | undefined>(undefined)
+        new BehaviorSubject<HoldingObject | undefined>(undefined)
     );
 
     const initialize = (state: EditorState) => {
@@ -89,31 +102,52 @@ const Editor: FunctionComponent = () => {
     const snapPosition = (position: Vector2): Vector2 => {
         const state = currentValue(refState);
 
-        const gridScale = BASE_GRID_SPACE / state.option.gridSize;
+        const { gridSpace } = state.option;
 
         const { snapping } = state.option;
 
         if (snapping) {
             return {
-                x: Math.round(position.x * gridScale) / gridScale,
-                y: Math.round(position.y * gridScale) / gridScale,
+                x: Math.round(position.x / gridSpace) * gridSpace,
+                y: Math.round(position.y / gridSpace) * gridSpace,
             };
         }
 
         return position;
     };
 
-    const addVertex = (i: number, position: Vector2) => {
+    const addVertex = (i: number, ...positions: Vector2[]) => {
         const state = currentValue(refState);
 
-        const { vertices } = currentValue(refState);
+        const { vertices, lines } = currentValue(refState);
+
+        const line = lines[i];
+
+        const result = positions.map((_, i) => vertices.length + i);
+
+        const brokenLines: Line[] = [...Array(positions.length + 1)].map(
+            (_, i, array) => ({
+                ...line,
+                anchor: [
+                    i === 0 ? line.anchor[0] : vertices.length + i - 1,
+                    i === array.length - 1
+                        ? line.anchor[1]
+                        : vertices.length + i,
+                ],
+            })
+        );
 
         refState.current.next({
             ...state,
-            vertices: [...vertices.slice(0, i), position, ...vertices.slice(i)],
+            vertices: [...vertices, ...positions],
+            lines: [
+                ...lines.slice(0, i),
+                ...brokenLines,
+                ...lines.slice(i + 1),
+            ],
         });
 
-        return true;
+        return result;
     };
 
     const moveVertex = (i: number, position: Vector2) => {
@@ -142,9 +176,31 @@ const Editor: FunctionComponent = () => {
 
         const vertices = state.vertices.filter((_, index) => index !== i);
 
+        const [l1, l2] = state.lines
+            .map((value, index) => ({ value, index }))
+            .filter(({ value }) => value.anchor.some((a) => a === i));
+
+        const mergedLine: Line = {
+            ...l1.value,
+            anchor: [l1.value.anchor[0], l2.value.anchor[1]],
+        };
+
+        const shiftedLines: Line[] = [
+            ...state.lines.slice(0, l1.index),
+            mergedLine,
+            ...state.lines.slice(l2.index + 1),
+        ].map((line) => ({
+            ...line,
+            anchor: [
+                line.anchor[0] - (line.anchor[0] > i ? 1 : 0),
+                line.anchor[1] - (line.anchor[1] > i ? 1 : 0),
+            ],
+        }));
+
         refState.current.next({
             ...state,
             vertices,
+            lines: shiftedLines,
         });
 
         return true;
@@ -157,33 +213,81 @@ const Editor: FunctionComponent = () => {
             return false;
         }
 
-        const { vertices, option } = currentValue(refState);
+        const state = currentValue(refState);
 
-        if (holdingObject.id === "door") {
-            for (let i = 0; i < vertices.length; i++) {
-                const v1 = vertices[i];
+        const { option } = state;
 
-                const v2 = vertices.at(i - 1)!;
+        const { vertices } = currentValue(refMemory)[refMemoryPointer.current];
 
-                const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
+        switch (holdingObject.id) {
+            case "door":
+                for (let i = 0; i < vertices.length; i++) {
+                    const v1 = vertices.at(i - 1)!;
 
-                if (isOnLine(position, v2, v1, r)) {
+                    const v2 = vertices[i];
+
+                    const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
+
+                    if (!isNearFromLine(position, v1, v2, r)) {
+                        continue;
+                    }
+
+                    const p = nearestOnLine(position, v1, v2);
+
+                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+
+                    const l = holdingObject.length;
+
+                    const dx = Math.cos(theta) * l;
+
+                    const dy = Math.sin(theta) * l;
+
+                    const a1 = { x: p.x, y: p.y };
+
+                    const a2 = { x: p.x + dx, y: p.y + dy };
+
+                    if (
+                        !isNearFromLine(a1, v1, v2, 1) ||
+                        !isNearFromLine(a2, v1, v2, 1)
+                    ) {
+                        continue;
+                    }
+
                     refHoldingObject.current.next({
                         ...holdingObject,
-                        position: nearestOnLine(position, v2, v1),
+                        position: position,
+                        anchor: {
+                            v1: a1,
+                            v2: a2,
+                        },
+                    });
+
+                    refState.current.next({
+                        ...state,
+                        vertices: [
+                            ...vertices.slice(0, i),
+                            a1,
+                            a2,
+                            ...vertices.slice(i),
+                        ],
                     });
 
                     return true;
                 }
-            }
+
+                refHoldingObject.current.next({
+                    ...holdingObject,
+                    position: position,
+                    anchor: undefined,
+                });
+
+                refState.current.next({
+                    ...state,
+                    vertices,
+                });
+
+                return true;
         }
-
-        refHoldingObject.current.next({
-            ...holdingObject,
-            position,
-        });
-
-        return true;
     };
 
     const clean = () => {
@@ -288,7 +392,7 @@ const Editor: FunctionComponent = () => {
     };
 
     const changeOption = (option: Partial<EditorOption>) => {
-        if (option.gridSize !== undefined && option.gridSize < 10) {
+        if (option.gridSpace !== undefined && option.gridSpace < 100) {
             return;
         }
 
@@ -303,7 +407,7 @@ const Editor: FunctionComponent = () => {
         });
     };
 
-    const setHoldingObject = (obj?: HoldingObjectState) => {
+    const setHoldingObject = (obj?: HoldingObject) => {
         refHoldingObject.current.next(obj);
     };
 

@@ -1,6 +1,12 @@
 import styles from "./SnappingToggleButton.module.css";
 import Tooltip from "./Tooltip";
-import { FunctionComponent, useContext, useEffect, useState } from "react";
+import {
+    FunctionComponent,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 import { join } from "../Functions/Element";
 import {
     MdGridView,
@@ -14,7 +20,7 @@ const SnappingToggleButton: FunctionComponent = () => {
 
     const [snapping, setSnapping] = useState<boolean>();
 
-    const [gridSize, setGridSize] = useState("");
+    const [gridSpaceString, setGridSpaceString] = useState("");
 
     const onSnappingButtonClicked = () => {
         changeOption({
@@ -24,25 +30,30 @@ const SnappingToggleButton: FunctionComponent = () => {
 
     const onGridUpButtonClicked = () => {
         changeOption({
-            gridSize: state.getValue().option.gridSize + 10,
+            gridSpace: state.getValue().option.gridSpace + 100,
         });
     };
 
     const onGridDownButtonClicked = () => {
         changeOption({
-            gridSize: state.getValue().option.gridSize - 10,
+            gridSpace: state.getValue().option.gridSpace - 100,
         });
     };
 
-    const toGridSizeFormat = (gridSize: number) => {
-        return `${gridSize}cm`;
-    };
+    const toGridSpaceString = useCallback(
+        (value: number) => {
+            const calibartion = state.getValue().option.measureCalibartion;
+
+            return `${value * calibartion}cm`;
+        },
+        [state]
+    );
 
     useEffect(() => {
         const sub = state.subscribe(({ option }) => {
-            const { snapping, gridSize } = option;
+            const { snapping, gridSpace } = option;
 
-            setGridSize(toGridSizeFormat(gridSize));
+            setGridSpaceString(toGridSpaceString(gridSpace));
 
             setSnapping(snapping);
         });
@@ -50,7 +61,7 @@ const SnappingToggleButton: FunctionComponent = () => {
         return () => {
             sub.unsubscribe();
         };
-    }, [state]);
+    }, [state, toGridSpaceString]);
 
     return (
         <Tooltip text="격자에 맞추기">
@@ -59,7 +70,7 @@ const SnappingToggleButton: FunctionComponent = () => {
                 onClick={onSnappingButtonClicked}
             >
                 <MdGridView size={20} />
-                <span className={styles.size}>{gridSize}</span>
+                <span className={styles.size}>{gridSpaceString}</span>
             </button>
             <div className={styles.sidebar}>
                 <button

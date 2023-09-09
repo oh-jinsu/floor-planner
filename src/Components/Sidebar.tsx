@@ -6,14 +6,16 @@ import {
 import styles from "./Sidebar.module.css";
 import { join } from "../Functions/Element";
 import { ReactNode, useContext, useState } from "react";
-import { EditorContext } from "./Editor";
+import { EditorContext, HoldingObject } from "./Editor";
+
+type HoldingObjectId = HoldingObject["id"];
 
 export type SideBarState = {
     menus: {
         subject: string;
         icon: ReactNode;
         items: {
-            id: string;
+            id: HoldingObjectId;
             src: string;
             name: string;
         }[];
@@ -57,9 +59,10 @@ const SideBar = () => {
         }));
     };
 
-    const onItemDragStart = (obj: string) => {
+    const onItemDragStart = (id: HoldingObjectId) => {
         setHoldingObject({
-            id: obj,
+            id,
+            length: 900,
         });
     };
 
