@@ -9,7 +9,12 @@ import Canvas, { DrawCall } from "./Canvas";
 import { Subject, combineLatest, map } from "rxjs";
 import { EditorContext, State, HoldingObjectState } from "./Editor";
 import { Vector2 } from "../Core/Vector";
-import { BASE_GRID_SPACE, BASE_SCALE_UNIT } from "../Constants/Editor";
+import {
+    BASE_BORDER_WIDTH,
+    BASE_GRID_SPACE,
+    BASE_LINE_WIDTH,
+    BASE_SCALE_UNIT,
+} from "../Constants/Editor";
 import { distance, scale } from "../Core/Math";
 
 const Painter: FunctionComponent = () => {
@@ -80,7 +85,9 @@ const Painter: FunctionComponent = () => {
             Math.PI * 2
         );
 
-        context.fillBy("#777");
+        context.fillBy("#fff");
+
+        context.strokeBy("#777", BASE_BORDER_WIDTH);
 
         context.closePath();
     };
@@ -128,7 +135,7 @@ const Painter: FunctionComponent = () => {
 
         context.fillBy("#fff");
 
-        context.strokeBy("#777", lineWidth, "square");
+        context.strokeBy("#777", lineWidth);
 
         context.closePath();
     };
@@ -212,33 +219,56 @@ const Painter: FunctionComponent = () => {
             holdingObject: HoldingObjectState,
             lineWidth: number
         ) => {
-            const { position } = holdingObject;
+            const { id, position } = holdingObject;
 
             if (!position) {
                 return;
             }
 
-            context.beginPath();
+            switch (id) {
+                case "door":
+                    context.beginPath();
 
-            const origin = scale(BASE_SCALE_UNIT, position);
+                    const { x: x1, y: y1 } = scale(BASE_SCALE_UNIT, position);
 
-            context.moveTo(origin.x, origin.y);
+                    const adx =
+                        Math.cos(-Math.PI * 0.5) *
+                        (0.5 * lineWidth - BASE_LINE_WIDTH * 0.5);
 
-            context.lineTo(origin.x + BASE_SCALE_UNIT, origin.y);
+                    const ady =
+                        Math.sin(-Math.PI * 0.5) *
+                        (0.5 * lineWidth - BASE_LINE_WIDTH * 0.5);
 
-            context.arc(
-                origin.x + BASE_SCALE_UNIT,
-                origin.y,
-                BASE_SCALE_UNIT,
-                Math.PI * 0.5,
-                Math.PI * 1
-            );
+                    context.moveTo(x1 + adx, y1 + ady);
 
-            context.fillBy("#fff");
+                    context.lineTo(x1 + BASE_SCALE_UNIT + adx, y1 + ady);
 
-            context.strokeBy("#777", lineWidth);
+                    context.lineTo(x1 + BASE_SCALE_UNIT - adx, y1 - ady);
 
-            context.closePath();
+                    context.lineTo(x1 - adx, y1 - ady);
+
+                    context.lineTo(x1 + adx, y1 + ady);
+
+                    context.fillBy("#fff");
+
+                    context.strokeBy("#777", BASE_LINE_WIDTH);
+
+                    context.moveTo(x1 + BASE_SCALE_UNIT - adx, y1 - ady);
+
+                    context.arc(
+                        x1 + BASE_SCALE_UNIT - adx,
+                        y1 - ady,
+                        BASE_SCALE_UNIT,
+                        Math.PI * 0.5,
+                        Math.PI * 1
+                    );
+
+                    context.strokeBy("#777", BASE_LINE_WIDTH);
+
+                    context.closePath();
+
+                    break;
+            }
         },
         []
     );
@@ -255,13 +285,13 @@ const Painter: FunctionComponent = () => {
 
                 drawWalls(context, vertices, option.lineWidth);
 
-                drawHandles(context, vertices, option.handleRadius);
-
-                drawLengths(context, vertices);
-
                 if (holdingObject) {
                     drawHoldingObject(context, holdingObject, option.lineWidth);
                 }
+
+                drawHandles(context, vertices, option.handleRadius);
+
+                drawLengths(context, vertices);
             };
         },
         [drawHandles, drawLengths, drawGrid, drawHoldingObject]
