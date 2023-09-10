@@ -39,7 +39,7 @@ const Control: FunctionComponent<Props> = ({ children }) => {
         state,
         holdingObject,
         moveObject,
-        addVertex,
+        addVertices,
         moveVertex,
         removeVertex,
         capture,
@@ -79,9 +79,8 @@ const Control: FunctionComponent<Props> = ({ children }) => {
             const v2 = scale(BASE_SCALE_UNIT, vertices[anchor[1]]);
 
             if (isNearFromLine(position, v1, v2, wallLineWidth * spareScale)) {
-                refMouseState.current.holding = addVertex(
+                refMouseState.current.holding = addVertices(
                     i,
-                    scale(1 / BASE_SCALE_UNIT, position),
                     scale(1 / BASE_SCALE_UNIT, position)
                 )[0];
 

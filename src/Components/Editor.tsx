@@ -28,7 +28,7 @@ import SideBar from "./Sidebar";
 import { isNearFromLine, nearestOnLine } from "../Functions/Math";
 import { EditorState } from "../Types/EditorState";
 import { EditorOption } from "../Types/EditorOption";
-import { Line } from "../Types/Line";
+import { Line, LineType } from "../Types/Line";
 
 export type HoldingObject = { position?: Vector2 } & HoldingDoor;
 
@@ -45,7 +45,7 @@ export type EditorContextProps = {
     state: BehaviorSubject<EditorState>;
     memory: BehaviorSubject<EditorState[]>;
     holdingObject: BehaviorSubject<HoldingObject | undefined>;
-    addVertex: (i: number, ...position: Vector2[]) => number[];
+    addVertices: (i: number, ...position: Vector2[]) => number[];
     moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
     moveObject: (position: Vector2) => boolean;
@@ -116,28 +116,46 @@ const Editor: FunctionComponent = () => {
         return position;
     };
 
-    const addVertex = (i: number, ...positions: Vector2[]) => {
+    const addVertices = (i: number, ...positions: Vector2[]) => {
         const state = currentValue(refState);
 
-        const { vertices, lines } = currentValue(refState);
+        const next = addVerticesToState(i, state, positions);
+
+        refState.current.next(next);
+
+        return positions.map(
+            (_, i) => next.vertices.length - positions.length + i
+        );
+    };
+
+    const addVerticesToState = (
+        i: number,
+        state: EditorState,
+        positions: Vector2[],
+        type?: LineType
+    ): EditorState => {
+        const { vertices, lines } = state;
 
         const line = lines[i];
 
-        const result = positions.map((_, i) => vertices.length + i);
-
         const brokenLines: Line[] = [...Array(positions.length + 1)].map(
-            (_, i, array) => ({
-                ...line,
-                anchor: [
-                    i === 0 ? line.anchor[0] : vertices.length + i - 1,
-                    i === array.length - 1
-                        ? line.anchor[1]
-                        : vertices.length + i,
-                ],
-            })
+            (_, i, array) => {
+                const isFirst = i === 0;
+
+                const isLast = i === array.length - 1;
+
+                return {
+                    ...line,
+                    type: !isFirst && !isLast ? type ?? line.type : line.type,
+                    anchor: [
+                        isFirst ? line.anchor[0] : vertices.length + i - 1,
+                        isLast ? line.anchor[1] : vertices.length + i,
+                    ],
+                };
+            }
         );
 
-        refState.current.next({
+        return {
             ...state,
             vertices: [...vertices, ...positions],
             lines: [
@@ -145,9 +163,7 @@ const Editor: FunctionComponent = () => {
                 ...brokenLines,
                 ...lines.slice(i + 1),
             ],
-        });
-
-        return result;
+        };
     };
 
     const moveVertex = (i: number, position: Vector2) => {
@@ -217,14 +233,18 @@ const Editor: FunctionComponent = () => {
 
         const { option } = state;
 
-        const { vertices } = currentValue(refMemory)[refMemoryPointer.current];
+        const memory = currentValue(refMemory)[refMemoryPointer.current];
+
+        const { vertices, lines } = memory;
 
         switch (holdingObject.id) {
             case "door":
-                for (let i = 0; i < vertices.length; i++) {
-                    const v1 = vertices.at(i - 1)!;
+                for (let i = 0; i < lines.length; i++) {
+                    const [i1, i2] = lines[i].anchor;
 
-                    const v2 = vertices[i];
+                    const v1 = vertices[i1];
+
+                    const v2 = vertices[i2];
 
                     const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
 
@@ -255,22 +275,21 @@ const Editor: FunctionComponent = () => {
 
                     refHoldingObject.current.next({
                         ...holdingObject,
-                        position: position,
+                        position: undefined,
                         anchor: {
                             v1: a1,
                             v2: a2,
                         },
                     });
 
-                    refState.current.next({
-                        ...state,
-                        vertices: [
-                            ...vertices.slice(0, i),
-                            a1,
-                            a2,
-                            ...vertices.slice(i),
-                        ],
-                    });
+                    const next = addVerticesToState(
+                        i,
+                        memory,
+                        [a1, a2],
+                        "door"
+                    );
+
+                    refState.current.next(next);
 
                     return true;
                 }
@@ -284,6 +303,7 @@ const Editor: FunctionComponent = () => {
                 refState.current.next({
                     ...state,
                     vertices,
+                    lines,
                 });
 
                 return true;
@@ -415,7 +435,7 @@ const Editor: FunctionComponent = () => {
         state: refState.current,
         memory: refMemory.current,
         holdingObject: refHoldingObject.current,
-        addVertex,
+        addVertices,
         moveVertex,
         removeVertex,
         moveObject,

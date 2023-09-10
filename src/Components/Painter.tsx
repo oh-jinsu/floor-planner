@@ -106,50 +106,64 @@ const Painter: FunctionComponent = () => {
         []
     );
 
-    const drawWall = (
-        context: CanvasRenderingContext2D,
-        vertices: Vector2[],
-        { anchor }: Line
-    ) => {
-        const [i1, i2] = anchor;
-
-        context.lineTo(
-            vertices[i1].x * BASE_SCALE_UNIT,
-            vertices[i1].y * BASE_SCALE_UNIT
-        );
-
-        context.lineTo(
-            vertices[i2].x * BASE_SCALE_UNIT,
-            vertices[i2].y * BASE_SCALE_UNIT
-        );
-    };
-
-    const drawWalls = useCallback(
+    const drawWall = useCallback(
         (
             context: CanvasRenderingContext2D,
             vertices: Vector2[],
-            lines: Line[],
-            { wallLineWidth, lineColor }: EditorOption
+            { type, anchor }: Line,
+            option: EditorOption
         ) => {
-            if (vertices.length === 0) {
+            const [i1, i2] = anchor;
+
+            const v1 = vertices[i1];
+
+            const v2 = vertices[i2];
+
+            if (type === "door") {
+                const s1 = scale(BASE_SCALE_UNIT, v1);
+
+                const s2 = scale(BASE_SCALE_UNIT, v2);
+
+                drawDoor(context, s1, s2, option);
+
                 return;
             }
 
+            const { lineColor, wallLineWidth } = option;
+
             context.beginPath();
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
+            context.lineTo(v1.x * BASE_SCALE_UNIT, v1.y * BASE_SCALE_UNIT);
 
-                drawWall(context, vertices, line);
-            }
-
-            context.fillBy("#fff");
+            context.lineTo(v2.x * BASE_SCALE_UNIT, v2.y * BASE_SCALE_UNIT);
 
             context.strokeBy(lineColor, wallLineWidth);
 
             context.closePath();
         },
         []
+    );
+
+    const drawWalls = useCallback(
+        (
+            context: CanvasRenderingContext2D,
+            vertices: Vector2[],
+            lines: Line[],
+            option: EditorOption
+        ) => {
+            if (vertices.length === 0) {
+                return;
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                drawWall(context, vertices, line, option);
+            }
+
+            context.fillBy("#fff");
+        },
+        [drawWall]
     );
 
     const drawMeasure = (
@@ -241,11 +255,54 @@ const Painter: FunctionComponent = () => {
         []
     );
 
+    const drawDoor = (
+        context: CanvasRenderingContext2D,
+        v1: Vector2,
+        v2: Vector2,
+        { wallLineWidth, lineColor }: EditorOption
+    ) => {
+        const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+
+        const dx = Math.sin(theta * Math.PI) * wallLineWidth * 0.5;
+
+        const dy = Math.cos(theta * Math.PI) * wallLineWidth * 0.5;
+
+        context.beginPath();
+
+        context.moveTo(v1.x - dx, v1.y - dy);
+
+        context.lineTo(v1.x + dx, v1.y + dy);
+
+        context.lineTo(v2.x + dx, v2.y + dy);
+
+        context.lineTo(v2.x - dx, v2.y - dy);
+
+        context.lineTo(v1.x - dx, v1.y - dy);
+
+        context.fillBy("#fff");
+
+        context.strokeBy(lineColor, BASE_LINE_WIDTH);
+
+        const px = v1.x - dx;
+
+        const py = v1.y - dy;
+
+        context.moveTo(px, py);
+
+        const length = distance(v1, v2);
+
+        context.arc(px, py, length, theta + Math.PI * 1.5, theta + Math.PI * 2);
+
+        context.strokeBy(lineColor, BASE_LINE_WIDTH);
+
+        context.closePath();
+    };
+
     const drawHoldingObject = useCallback(
         (
             context: CanvasRenderingContext2D,
             holdingObject: HoldingObject,
-            { wallLineWidth, lineColor }: EditorOption
+            option: EditorOption
         ) => {
             const { id, position } = holdingObject;
 
@@ -255,9 +312,7 @@ const Painter: FunctionComponent = () => {
 
             switch (id) {
                 case "door":
-                    context.beginPath();
-
-                    const { anchor, length } = holdingObject;
+                    const { anchor } = holdingObject;
 
                     const [v1, v2] = (() => {
                         if (anchor) {
@@ -270,6 +325,8 @@ const Painter: FunctionComponent = () => {
 
                         const v1 = scale(BASE_SCALE_UNIT, position);
 
+                        const { length } = holdingObject;
+
                         const v2 = {
                             x: v1.x + length * BASE_SCALE_UNIT,
                             y: v1.y,
@@ -278,43 +335,7 @@ const Painter: FunctionComponent = () => {
                         return [v1, v2];
                     })();
 
-                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
-
-                    const dx = Math.sin(theta * Math.PI) * wallLineWidth * 0.5;
-
-                    const dy = Math.cos(theta * Math.PI) * wallLineWidth * 0.5;
-
-                    context.moveTo(v1.x - dx, v1.y - dy);
-
-                    context.lineTo(v1.x + dx, v1.y + dy);
-
-                    context.lineTo(v2.x + dx, v2.y + dy);
-
-                    context.lineTo(v2.x - dx, v2.y - dy);
-
-                    context.lineTo(v1.x - dx, v1.y - dy);
-
-                    context.fillBy("#fff");
-
-                    context.strokeBy(lineColor, BASE_LINE_WIDTH);
-
-                    const px = v1.x - dx;
-
-                    const py = v1.y - dy;
-
-                    context.moveTo(px, py);
-
-                    context.arc(
-                        px,
-                        py,
-                        length * BASE_SCALE_UNIT,
-                        theta + Math.PI * 1.5,
-                        theta + Math.PI * 2
-                    );
-
-                    context.strokeBy(lineColor, BASE_LINE_WIDTH);
-
-                    context.closePath();
+                    drawDoor(context, v1, v2, option);
 
                     break;
             }
