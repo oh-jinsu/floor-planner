@@ -8,7 +8,7 @@ const App = () => {
         <>
             <header className={styles.header}>
                 <div className={styles.title}>
-                    <h1>Floor Planner</h1>
+                    <h1>Good Planner</h1>
                     <address className={styles.address}>
                         By <a href="mailto:ohjinsu98@icloud.com">Jinsu Oh</a>
                     </address>

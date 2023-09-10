@@ -106,7 +106,24 @@ const Painter: FunctionComponent = () => {
         []
     );
 
-    const drawWall = useCallback(
+    const drawWall = (
+        context: CanvasRenderingContext2D,
+        v1: Vector2,
+        v2: Vector2,
+        { lineColor, wallLineWidth }: EditorOption
+    ) => {
+        context.beginPath();
+
+        context.lineTo(v1.x * BASE_SCALE_UNIT, v1.y * BASE_SCALE_UNIT);
+
+        context.lineTo(v2.x * BASE_SCALE_UNIT, v2.y * BASE_SCALE_UNIT);
+
+        context.strokeBy(lineColor, wallLineWidth);
+
+        context.closePath();
+    };
+
+    const drawLine = useCallback(
         (
             context: CanvasRenderingContext2D,
             vertices: Vector2[],
@@ -129,22 +146,12 @@ const Painter: FunctionComponent = () => {
                 return;
             }
 
-            const { lineColor, wallLineWidth } = option;
-
-            context.beginPath();
-
-            context.lineTo(v1.x * BASE_SCALE_UNIT, v1.y * BASE_SCALE_UNIT);
-
-            context.lineTo(v2.x * BASE_SCALE_UNIT, v2.y * BASE_SCALE_UNIT);
-
-            context.strokeBy(lineColor, wallLineWidth);
-
-            context.closePath();
+            drawWall(context, v1, v2, option);
         },
         []
     );
 
-    const drawWalls = useCallback(
+    const drawLines = useCallback(
         (
             context: CanvasRenderingContext2D,
             vertices: Vector2[],
@@ -155,15 +162,31 @@ const Painter: FunctionComponent = () => {
                 return;
             }
 
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
+            context.beginPath();
 
-                drawWall(context, vertices, line, option);
+            for (let i = 0; i < lines.length; i++) {
+                const [i1, i2] = lines[i].anchor;
+
+                const v1 = vertices[i1];
+
+                const v2 = vertices[i2];
+
+                context.lineTo(v1.x * BASE_SCALE_UNIT, v1.y * BASE_SCALE_UNIT);
+
+                context.lineTo(v2.x * BASE_SCALE_UNIT, v2.y * BASE_SCALE_UNIT);
             }
 
             context.fillBy("#fff");
+
+            context.closePath();
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                drawLine(context, vertices, line, option);
+            }
         },
-        [drawWall]
+        [drawLine]
     );
 
     const drawMeasure = (
@@ -353,7 +376,7 @@ const Painter: FunctionComponent = () => {
 
                 drawGrid(context);
 
-                drawWalls(context, vertices, lines, option);
+                drawLines(context, vertices, lines, option);
 
                 if (holdingObject) {
                     drawHoldingObject(context, holdingObject, option);
@@ -364,7 +387,7 @@ const Painter: FunctionComponent = () => {
                 drawMeasures(context, vertices, lines, option);
             };
         },
-        [drawHandles, drawMeasures, drawGrid, drawHoldingObject, drawWalls]
+        [drawHandles, drawMeasures, drawGrid, drawHoldingObject, drawLines]
     );
 
     useEffect(() => {

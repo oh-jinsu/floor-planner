@@ -25,7 +25,7 @@ export const DEFAULT_HANDLE_RADIUS = 5;
 
 export const DEFAULT_SPARE_SCALE = 4;
 
-export const DEFAULT_WALL_LINE_WIDTH = 6;
+export const DEFAULT_WALL_LINE_WIDTH = 10;
 
 export const DEFAULT_SHORT_CLICK_THRESHOLD = 200;
 
