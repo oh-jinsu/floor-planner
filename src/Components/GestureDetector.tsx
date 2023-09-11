@@ -35,17 +35,11 @@ const GestureDetector: FunctionComponent<Props> = ({
 
             const offset = getOffset(current);
 
-            const width =
-                current.clientWidth < BASE_VIEWPORT_WIDTH
-                    ? current.scrollWidth
-                    : BASE_VIEWPORT_WIDTH;
+            const width = current.scrollWidth;
 
             const x = e.x - offset.x - width * 0.5 + current.scrollLeft;
 
-            const height =
-                current.clientHeight < BASE_VIEWPORT_HEIGHT
-                    ? current.scrollHeight
-                    : BASE_VIEWPORT_HEIGHT;
+            const height = current.scrollHeight;
 
             const y = e.y - offset.y - height * 0.5 + current.scrollTop;
 

@@ -6,7 +6,7 @@ import {
     useRef,
 } from "react";
 import Canvas, { DrawCall } from "./Canvas";
-import { Subject, combineLatest, map } from "rxjs";
+import { BehaviorSubject, combineLatest, map } from "rxjs";
 import { EditorContext, HoldingObject } from "./Editor";
 import { Vector2 } from "../Types/Vector";
 import {
@@ -20,7 +20,7 @@ import { EditorState } from "../Types/EditorState";
 import { Line } from "../Types/Line";
 
 const Painter: FunctionComponent = () => {
-    const queue = useRef(new Subject<DrawCall>());
+    const queue = useRef(new BehaviorSubject<DrawCall>(() => {}));
 
     const { state, holdingObject } = useContext(EditorContext);
 
