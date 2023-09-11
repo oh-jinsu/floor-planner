@@ -190,21 +190,37 @@ const Editor: FunctionComponent = () => {
     const removeVertex = (i: number) => {
         const state = currentValue(refState);
 
-        const vertices = state.vertices.filter((_, index) => index !== i);
+        const vertices = [
+            ...state.vertices.slice(0, i),
+            ...state.vertices.slice(i + 1),
+        ];
 
-        const [l1, l2] = state.lines
-            .map((value, index) => ({ value, index }))
-            .filter(({ value }) => value.anchor.some((a) => a === i));
+        const indexedLines = state.lines.map((value, index) => ({
+            value,
+            index,
+        }));
+
+        const l1 = indexedLines.find(({ value }) => value.anchor[1] === i);
+
+        const l2 = indexedLines.find(({ value }) => value.anchor[0] === i);
+
+        if (!l1 || !l2) {
+            return true;
+        }
 
         const mergedLine: Line = {
             ...l1.value,
             anchor: [l1.value.anchor[0], l2.value.anchor[1]],
         };
 
+        const filteredLines = state.lines.filter(({ anchor }) =>
+            anchor.every((a) => a !== i)
+        );
+
         const shiftedLines: Line[] = [
-            ...state.lines.slice(0, l1.index),
+            ...filteredLines.slice(0, l2.index),
             mergedLine,
-            ...state.lines.slice(l2.index + 1),
+            ...filteredLines.slice(l2.index),
         ].map((line) => ({
             ...line,
             anchor: [
@@ -212,6 +228,8 @@ const Editor: FunctionComponent = () => {
                 line.anchor[1] - (line.anchor[1] > i ? 1 : 0),
             ],
         }));
+
+        console.log(shiftedLines);
 
         refState.current.next({
             ...state,
