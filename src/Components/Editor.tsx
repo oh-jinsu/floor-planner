@@ -205,7 +205,7 @@ const Editor: FunctionComponent = () => {
         const l2 = indexedLines.find(({ value }) => value.anchor[0] === i);
 
         if (!l1 || !l2) {
-            return true;
+            return false;
         }
 
         const mergedLine: Line = {
@@ -229,13 +229,13 @@ const Editor: FunctionComponent = () => {
             ],
         }));
 
-        console.log(shiftedLines);
-
-        refState.current.next({
+        const result = {
             ...state,
             vertices,
             lines: shiftedLines,
-        });
+        };
+
+        refState.current.next(result);
 
         return true;
     };
@@ -328,26 +328,7 @@ const Editor: FunctionComponent = () => {
         }
     };
 
-    const clean = () => {
-        const state = currentValue(refState);
-
-        const isUnique = (p: Vector2, i: number) => {
-            const { vertices } = state;
-
-            const j = (i + 1) % vertices.length;
-
-            const q = vertices[j];
-
-            return q.x !== p.x || q.y !== p.y;
-        };
-
-        const vertices = state.vertices.filter(isUnique);
-
-        refState.current.next({
-            ...state,
-            vertices,
-        });
-    };
+    const clean = () => {};
 
     const capture = () => {
         clean();
