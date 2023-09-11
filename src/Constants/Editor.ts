@@ -43,6 +43,14 @@ export const INITIAL_VERTICES: Vector2[] = [
         y: 3000,
     },
     {
+        x: 4500,
+        y: 3000,
+    },
+    {
+        x: 3600,
+        y: 3000,
+    },
+    {
         x: -5000,
         y: 3000,
     },
@@ -62,7 +70,15 @@ export const INITIAL_LINES: Line[] = [
         anchor: [2, 3],
     },
     {
+        type: "door",
+        anchor: [3, 4],
+    },
+    {
         type: "wall",
-        anchor: [3, 0],
+        anchor: [4, 5],
+    },
+    {
+        type: "wall",
+        anchor: [5, 0],
     },
 ];
