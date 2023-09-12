@@ -9,7 +9,7 @@ export const BASE_VIEWPORT_HEIGHT = BASE_SCALE_UNIT * 40000;
 
 export const BASE_LINE_WIDTH = 2;
 
-export const BASE_BORDER_WIDTH = 3;
+export const BASE_BORDER_WIDTH = 2;
 
 export const DEFAULT_GRID_SPACE = 1000;
 
@@ -19,13 +19,13 @@ export const DEFAULT_MEASURE_COLOR = "#bbb";
 
 export const DEFAULT_MEASURE_CALIBRATION = 0.1;
 
-export const DEFAULT_MEASURE_DISTANCE_RATIO = 0.5;
+export const DEFAULT_MEASURE_DISTANCE_RATIO = 1;
 
-export const DEFAULT_HANDLE_RADIUS = 5;
+export const DEFAULT_HANDLE_RADIUS = 5.5;
 
 export const DEFAULT_SPARE_SCALE = 4;
 
-export const DEFAULT_WALL_LINE_WIDTH = 10;
+export const DEFAULT_WALL_LINE_WIDTH = 9.5;
 
 export const DEFAULT_SHORT_CLICK_THRESHOLD = 200;
 
@@ -35,6 +35,14 @@ export const INITIAL_VERTICES: Vector2[] = [
         y: -3000,
     },
     {
+        x: -3000,
+        y: -3000,
+    },
+    {
+        x: -1000,
+        y: -3000,
+    },
+    {
         x: 5000,
         y: -3000,
     },
@@ -43,11 +51,11 @@ export const INITIAL_VERTICES: Vector2[] = [
         y: 3000,
     },
     {
-        x: 4500,
+        x: 4000,
         y: 3000,
     },
     {
-        x: 3600,
+        x: 3000,
         y: 3000,
     },
     {
@@ -62,7 +70,7 @@ export const INITIAL_LINES: Line[] = [
         anchor: [0, 1],
     },
     {
-        type: "wall",
+        type: "window",
         anchor: [1, 2],
     },
     {
@@ -70,7 +78,7 @@ export const INITIAL_LINES: Line[] = [
         anchor: [2, 3],
     },
     {
-        type: "door",
+        type: "wall",
         anchor: [3, 4],
     },
     {
@@ -78,7 +86,15 @@ export const INITIAL_LINES: Line[] = [
         anchor: [4, 5],
     },
     {
+        type: "door",
+        anchor: [5, 6],
+    },
+    {
         type: "wall",
-        anchor: [5, 0],
+        anchor: [6, 7],
+    },
+    {
+        type: "wall",
+        anchor: [7, 0],
     },
 ];

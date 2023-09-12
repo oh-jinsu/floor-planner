@@ -30,10 +30,22 @@ import { EditorState } from "../Types/EditorState";
 import { EditorOption } from "../Types/EditorOption";
 import { Line, LineType } from "../Types/Line";
 
-export type HoldingObject = { position?: Vector2 } & HoldingDoor;
+export type HoldingObject = { position?: Vector2 } & (
+    | HoldingDoor
+    | HoldingWindow
+);
 
 export type HoldingDoor = {
     id: "door";
+    length: number;
+    anchor?: {
+        v1: Vector2;
+        v2: Vector2;
+    };
+};
+
+export type HoldingWindow = {
+    id: "window";
     length: number;
     anchor?: {
         v1: Vector2;
@@ -324,8 +336,77 @@ const Editor: FunctionComponent = () => {
                     lines,
                 });
 
-                return true;
+                break;
+            case "window":
+                for (let i = 0; i < lines.length; i++) {
+                    const [i1, i2] = lines[i].anchor;
+
+                    const v1 = vertices[i1];
+
+                    const v2 = vertices[i2];
+
+                    const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
+
+                    if (!isNearFromLine(position, v1, v2, r)) {
+                        continue;
+                    }
+
+                    const p = nearestOnLine(position, v1, v2);
+
+                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+
+                    const l = holdingObject.length;
+
+                    const dx = Math.cos(theta) * l;
+
+                    const dy = Math.sin(theta) * l;
+
+                    const a1 = { x: p.x, y: p.y };
+
+                    const a2 = { x: p.x + dx, y: p.y + dy };
+
+                    if (
+                        !isNearFromLine(a1, v1, v2, 1) ||
+                        !isNearFromLine(a2, v1, v2, 1)
+                    ) {
+                        continue;
+                    }
+
+                    refHoldingObject.current.next({
+                        ...holdingObject,
+                        position: undefined,
+                        anchor: {
+                            v1: a1,
+                            v2: a2,
+                        },
+                    });
+
+                    const next = addVerticesToState(
+                        i,
+                        memory,
+                        [a1, a2],
+                        "window"
+                    );
+
+                    refState.current.next(next);
+
+                    return true;
+                }
+
+                refHoldingObject.current.next({
+                    ...holdingObject,
+                    position: position,
+                    anchor: undefined,
+                });
+
+                refState.current.next({
+                    ...state,
+                    vertices,
+                    lines,
+                });
         }
+
+        return true;
     };
 
     const clean = () => {};

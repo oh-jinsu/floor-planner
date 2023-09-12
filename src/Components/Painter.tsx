@@ -131,9 +131,13 @@ const Painter: FunctionComponent = () => {
     ) => {
         const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
 
-        const dx = Math.sin(theta * Math.PI) * wallLineWidth * 0.5;
+        const dx =
+            Math.sin(theta * Math.PI) *
+            (wallLineWidth * 0.5 - BASE_LINE_WIDTH * 0.5);
 
-        const dy = Math.cos(theta * Math.PI) * wallLineWidth * 0.5;
+        const dy =
+            Math.cos(theta * Math.PI) *
+            (wallLineWidth * 0.5 - BASE_LINE_WIDTH * 0.5);
 
         context.beginPath();
 
@@ -151,6 +155,10 @@ const Painter: FunctionComponent = () => {
 
         context.strokeBy(lineColor, BASE_LINE_WIDTH);
 
+        context.closePath();
+
+        context.beginPath();
+
         const px = v1.x;
 
         const py = v1.y;
@@ -160,6 +168,45 @@ const Painter: FunctionComponent = () => {
         const length = distance(v1, v2);
 
         context.arc(px, py, length, theta + Math.PI * 1.5, theta + Math.PI * 2);
+
+        context.strokeBy(lineColor, BASE_LINE_WIDTH);
+
+        context.closePath();
+    };
+
+    const drawWindow = (
+        context: CanvasRenderingContext2D,
+        v1: Vector2,
+        v2: Vector2,
+        { wallLineWidth, lineColor }: EditorOption
+    ) => {
+        const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+
+        const dx =
+            Math.sin(theta * Math.PI) *
+            (wallLineWidth * 0.5 - BASE_LINE_WIDTH * 0.5);
+
+        const dy =
+            Math.cos(theta * Math.PI) *
+            (wallLineWidth * 0.5 - BASE_LINE_WIDTH * 0.5);
+
+        context.beginPath();
+
+        context.moveTo(v1.x - dx, v1.y - dy);
+
+        context.lineTo(v1.x + dx, v1.y + dy);
+
+        context.lineTo(v2.x + dx, v2.y + dy);
+
+        context.lineTo(v2.x - dx, v2.y - dy);
+
+        context.lineTo(v1.x - dx, v1.y - dy);
+
+        context.moveTo(v1.x, v1.y);
+
+        context.lineTo(v2.x, v2.y);
+
+        context.fillBy("#fff");
 
         context.strokeBy(lineColor, BASE_LINE_WIDTH);
 
@@ -185,6 +232,16 @@ const Painter: FunctionComponent = () => {
                 const s2 = scale(BASE_SCALE_UNIT, v2);
 
                 drawDoor(context, s1, s2, option);
+
+                return;
+            }
+
+            if (type === "window") {
+                const s1 = scale(BASE_SCALE_UNIT, v1);
+
+                const s2 = scale(BASE_SCALE_UNIT, v2);
+
+                drawWindow(context, s1, s2, option);
 
                 return;
             }
@@ -270,9 +327,9 @@ const Painter: FunctionComponent = () => {
 
         context.lineTo(ex, ey);
 
-        const adx = dx * 0.4 * BASE_SCALE_UNIT;
+        const adx = Math.cos(theta - Math.PI * 0.5) * 200 * BASE_SCALE_UNIT;
 
-        const ady = dy * 0.4 * BASE_SCALE_UNIT;
+        const ady = Math.sin(theta - Math.PI * 0.5) * 200 * BASE_SCALE_UNIT;
 
         context.moveTo(sx - adx, sy - ady);
 
@@ -334,7 +391,7 @@ const Painter: FunctionComponent = () => {
             }
 
             switch (id) {
-                case "door":
+                case "door": {
                     const { anchor } = holdingObject;
 
                     const [v1, v2] = (() => {
@@ -361,6 +418,35 @@ const Painter: FunctionComponent = () => {
                     drawDoor(context, v1, v2, option);
 
                     break;
+                }
+                case "window": {
+                    const { anchor } = holdingObject;
+
+                    const [v1, v2] = (() => {
+                        if (anchor) {
+                            const v1 = scale(BASE_SCALE_UNIT, anchor.v1);
+
+                            const v2 = scale(BASE_SCALE_UNIT, anchor.v2);
+
+                            return [v1, v2];
+                        }
+
+                        const v1 = scale(BASE_SCALE_UNIT, position);
+
+                        const { length } = holdingObject;
+
+                        const v2 = {
+                            x: v1.x + length * BASE_SCALE_UNIT,
+                            y: v1.y,
+                        };
+
+                        return [v1, v2];
+                    })();
+
+                    drawWindow(context, v1, v2, option);
+
+                    break;
+                }
             }
         },
         []

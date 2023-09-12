@@ -2,6 +2,7 @@ import {
     MdOutlineChair,
     MdOutlineDoorFront,
     MdOutlineHome,
+    MdOutlineWindow,
 } from "react-icons/md";
 import styles from "./Sidebar.module.css";
 import { join } from "../Functions/Element";
@@ -29,13 +30,24 @@ const SideBar = () => {
     const [state, setState] = useState<SideBarState>({
         menus: [
             {
-                subject: "구조물",
+                subject: "문",
                 icon: <MdOutlineDoorFront size={28} />,
                 items: [
                     {
                         id: "door",
                         src: "/images/door.jpg",
-                        name: "문",
+                        name: "여닫이문",
+                    },
+                ],
+            },
+            {
+                subject: "창문",
+                icon: <MdOutlineWindow size={28} />,
+                items: [
+                    {
+                        id: "window",
+                        src: "/images/window.png",
+                        name: "미서기창",
                     },
                 ],
             },
@@ -60,10 +72,21 @@ const SideBar = () => {
     };
 
     const onItemDragStart = (id: HoldingObjectId) => {
-        setHoldingObject({
-            id,
-            length: 900,
-        });
+        switch (id) {
+            case "door":
+                setHoldingObject({
+                    id,
+                    length: 1000,
+                });
+
+                break;
+            case "window":
+                setHoldingObject({
+                    id,
+                    length: 2000,
+                });
+                break;
+        }
     };
 
     const { menus, selected } = state;

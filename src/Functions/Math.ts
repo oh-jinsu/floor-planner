@@ -38,7 +38,7 @@ export const isNearFromLine = (
 
     const my = py - (y2 + y1) * 0.5;
 
-    return Math.pow(mx, 2) + Math.pow(my, 2) < l * 0.25;
+    return Math.pow(mx, 2) + Math.pow(my, 2) <= l * 0.25;
 };
 
 export const nearestOnLine = (
