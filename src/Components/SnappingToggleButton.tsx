@@ -7,7 +7,7 @@ import {
     useEffect,
     useState,
 } from "react";
-import { join } from "../Functions/Element";
+import { join } from "../Functions/Common/Element";
 import {
     MdGridView,
     MdKeyboardArrowDown,
@@ -16,7 +16,7 @@ import {
 import { EditorContext } from "./Editor";
 
 const SnappingToggleButton: FunctionComponent = () => {
-    const { state, changeOption } = useContext(EditorContext);
+    const { stateSubject: state, changeOption } = useContext(EditorContext);
 
     const [snapping, setSnapping] = useState<boolean>();
 

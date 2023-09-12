@@ -1,6 +1,6 @@
 import Editor from "./Components/Editor";
 import styles from "./App.module.css";
-import "./Extensions/";
+import "./Functions/Extensions";
 import SubmitButton from "./Components/SubmitButton";
 
 const App = () => {

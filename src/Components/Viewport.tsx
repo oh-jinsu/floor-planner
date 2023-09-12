@@ -14,12 +14,23 @@ export type Props = {
 
 export type ViewportContextProps = {
     refViewport: RefObject<HTMLDivElement>;
+    setCursor: (cursor: string) => void;
 };
 
 export const ViewportContext = createContext<ViewportContextProps>({} as any);
 
 const Viewport: FunctionComponent<Props> = ({ children }) => {
     const refViewport = useRef<HTMLDivElement>(null);
+
+    const setCursor = (cursor: string) => {
+        const { current } = refViewport;
+
+        if (!current) {
+            return;
+        }
+
+        current.style.cursor = cursor;
+    };
 
     const center = () => {
         const { current } = refViewport;
@@ -41,6 +52,7 @@ const Viewport: FunctionComponent<Props> = ({ children }) => {
 
     const value: ViewportContextProps = {
         refViewport,
+        setCursor,
     };
 
     return (

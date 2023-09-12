@@ -5,58 +5,24 @@ import { BehaviorSubject } from "rxjs";
 import Painter from "./Painter";
 import { createContext } from "react";
 import { Vector2 } from "../Types/Vector";
-import { clone } from "../Functions/Object";
-import {
-    DEFAULT_GRID_SPACE,
-    BASE_SCALE_UNIT,
-    DEFAULT_HANDLE_RADIUS,
-    DEFAULT_LINE_COLOR,
-    DEFAULT_WALL_LINE_WIDTH,
-    DEFAULT_MEASURE_CALIBRATION,
-    DEFAULT_MEASURE_COLOR,
-    DEFAULT_SHORT_CLICK_THRESHOLD,
-    DEFAULT_SPARE_SCALE,
-    INITIAL_VERTICES,
-    DEFAULT_MEASURE_DISTANCE_RATIO,
-    INITIAL_LINES,
-} from "../Constants/Editor";
-import { currentValue } from "../Functions/React";
-import { arrayBufferToString } from "../Functions/Buffer";
+import { clone } from "../Functions/Common/Object";
+import { BASE_SCALE_UNIT, INITIAL_STATE } from "../Constants/Editor";
+import { currentValue } from "../Functions/Common/React";
+import { arrayBufferToString } from "../Functions/Common/Buffer";
 import Viewport from "./Viewport";
 import ToolBar from "./ToolBar";
 import SideBar from "./Sidebar";
-import { isNearFromLine, nearestOnLine } from "../Functions/Math";
+import { isNearFromLine, nearestOnLine } from "../Functions/Common/Math";
 import { EditorState } from "../Types/EditorState";
 import { EditorOption } from "../Types/EditorOption";
-import { Line, LineType } from "../Types/Line";
-
-export type HoldingObject = { position?: Vector2 } & (
-    | HoldingDoor
-    | HoldingWindow
-);
-
-export type HoldingDoor = {
-    id: "door";
-    length: number;
-    anchor?: {
-        v1: Vector2;
-        v2: Vector2;
-    };
-};
-
-export type HoldingWindow = {
-    id: "window";
-    length: number;
-    anchor?: {
-        v1: Vector2;
-        v2: Vector2;
-    };
-};
+import { snapPosition } from "../Functions/Editor/SnapPosition";
+import { GrabbingObject } from "../Types/GrabbingObject";
+import { addVerticesToState } from "../Functions/Editor/AddVerticesToState";
+import { removeVertexFromState } from "../Functions/Editor/RemoveVertexFromState";
 
 export type EditorContextProps = {
-    state: BehaviorSubject<EditorState>;
-    memory: BehaviorSubject<EditorState[]>;
-    holdingObject: BehaviorSubject<HoldingObject | undefined>;
+    stateSubject: BehaviorSubject<EditorState>;
+    memorySubject: BehaviorSubject<EditorState[]>;
     addVertices: (i: number, ...position: Vector2[]) => number[];
     moveVertex: (i: number, position: Vector2) => Vector2;
     removeVertex: (i: number) => boolean;
@@ -68,40 +34,19 @@ export type EditorContextProps = {
     undo: () => void;
     redo: () => void;
     changeOption: (option: Partial<EditorOption>) => void;
-    setHoldingObject: (holdingObject?: HoldingObject) => void;
+    setHoldingObject: (grabbingObject?: GrabbingObject) => void;
 };
 
 export const EditorContext = createContext<EditorContextProps>({} as any);
 
 const Editor: FunctionComponent = () => {
-    const refState = useRef(
-        new BehaviorSubject<EditorState>({
-            option: {
-                snapping: true,
-                gridSpace: DEFAULT_GRID_SPACE,
-                handleRadius: DEFAULT_HANDLE_RADIUS,
-                spareScale: DEFAULT_SPARE_SCALE,
-                lineColor: DEFAULT_LINE_COLOR,
-                wallLineWidth: DEFAULT_WALL_LINE_WIDTH,
-                measureColor: DEFAULT_MEASURE_COLOR,
-                measureCalibartion: DEFAULT_MEASURE_CALIBRATION,
-                measureDistanceRatio: DEFAULT_MEASURE_DISTANCE_RATIO,
-                shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
-            },
-            vertices: INITIAL_VERTICES,
-            lines: INITIAL_LINES,
-        })
-    );
+    const refState = useRef(new BehaviorSubject<EditorState>(INITIAL_STATE));
 
     const refMemory = useRef(
         new BehaviorSubject<EditorState[]>([clone(currentValue(refState))])
     );
 
     const refMemoryPointer = useRef(0);
-
-    const refHoldingObject = useRef(
-        new BehaviorSubject<HoldingObject | undefined>(undefined)
-    );
 
     const initialize = (state: EditorState) => {
         refState.current.next(state);
@@ -111,77 +56,28 @@ const Editor: FunctionComponent = () => {
         refMemoryPointer.current = 0;
     };
 
-    const snapPosition = (position: Vector2): Vector2 => {
-        const state = currentValue(refState);
-
-        const { gridSpace } = state.option;
-
-        const { snapping } = state.option;
-
-        if (snapping) {
-            return {
-                x: Math.round(position.x / gridSpace) * gridSpace,
-                y: Math.round(position.y / gridSpace) * gridSpace,
-            };
-        }
-
-        return position;
-    };
-
     const addVertices = (i: number, ...positions: Vector2[]) => {
         const state = currentValue(refState);
 
-        const next = addVerticesToState(i, state, positions);
-
-        refState.current.next(next);
-
-        return positions.map(
-            (_, i) => next.vertices.length - positions.length + i
-        );
-    };
-
-    const addVerticesToState = (
-        i: number,
-        state: EditorState,
-        positions: Vector2[],
-        type?: LineType
-    ): EditorState => {
-        const { vertices, lines } = state;
-
-        const line = lines[i];
-
-        const brokenLines: Line[] = [...Array(positions.length + 1)].map(
-            (_, i, array) => {
-                const isFirst = i === 0;
-
-                const isLast = i === array.length - 1;
-
-                return {
-                    ...line,
-                    type: !isFirst && !isLast ? type ?? line.type : line.type,
-                    anchor: [
-                        isFirst ? line.anchor[0] : vertices.length + i - 1,
-                        isLast ? line.anchor[1] : vertices.length + i,
-                    ],
-                };
-            }
+        const { result, vertices, lines } = addVerticesToState(
+            i,
+            state,
+            positions
         );
 
-        return {
+        refState.current.next({
             ...state,
-            vertices: [...vertices, ...positions],
-            lines: [
-                ...lines.slice(0, i),
-                ...brokenLines,
-                ...lines.slice(i + 1),
-            ],
-        };
+            vertices,
+            lines,
+        });
+
+        return result;
     };
 
     const moveVertex = (i: number, position: Vector2) => {
         const state = currentValue(refState);
 
-        const destination = snapPosition(position);
+        const destination = snapPosition(state, position);
 
         const vertices = state.vertices.map((value, index) => {
             if (index !== i) {
@@ -202,49 +98,12 @@ const Editor: FunctionComponent = () => {
     const removeVertex = (i: number) => {
         const state = currentValue(refState);
 
-        const vertices = [
-            ...state.vertices.slice(0, i),
-            ...state.vertices.slice(i + 1),
-        ];
-
-        const indexedLines = state.lines.map((value, index) => ({
-            value,
-            index,
-        }));
-
-        const l1 = indexedLines.find(({ value }) => value.anchor[1] === i);
-
-        const l2 = indexedLines.find(({ value }) => value.anchor[0] === i);
-
-        if (!l1 || !l2) {
-            return false;
-        }
-
-        const mergedLine: Line = {
-            ...l1.value,
-            anchor: [l1.value.anchor[0], l2.value.anchor[1]],
-        };
-
-        const filteredLines = state.lines.filter(({ anchor }) =>
-            anchor.every((a) => a !== i)
-        );
-
-        const shiftedLines: Line[] = [
-            ...filteredLines.slice(0, l2.index),
-            mergedLine,
-            ...filteredLines.slice(l2.index),
-        ].map((line) => ({
-            ...line,
-            anchor: [
-                line.anchor[0] - (line.anchor[0] > i ? 1 : 0),
-                line.anchor[1] - (line.anchor[1] > i ? 1 : 0),
-            ],
-        }));
+        const { vertices, lines } = removeVertexFromState(state, i);
 
         const result = {
             ...state,
             vertices,
-            lines: shiftedLines,
+            lines,
         };
 
         refState.current.next(result);
@@ -253,158 +112,81 @@ const Editor: FunctionComponent = () => {
     };
 
     const moveObject = (position: Vector2) => {
-        const holdingObject = currentValue(refHoldingObject);
-
-        if (!holdingObject) {
-            return false;
-        }
-
         const state = currentValue(refState);
 
-        const { option } = state;
+        const { grabbingObject, option } = state;
+
+        if (!grabbingObject) {
+            return false;
+        }
 
         const memory = currentValue(refMemory)[refMemoryPointer.current];
 
         const { vertices, lines } = memory;
 
-        switch (holdingObject.id) {
-            case "door":
-                for (let i = 0; i < lines.length; i++) {
-                    const [i1, i2] = lines[i].anchor;
+        for (let i = 0; i < lines.length; i++) {
+            const [i1, i2] = lines[i].anchor;
 
-                    const v1 = vertices[i1];
+            const v1 = vertices[i1];
 
-                    const v2 = vertices[i2];
+            const v2 = vertices[i2];
 
-                    const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
+            const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
 
-                    if (!isNearFromLine(position, v1, v2, r)) {
-                        continue;
-                    }
+            if (!isNearFromLine(position, v1, v2, r)) {
+                continue;
+            }
 
-                    const p = nearestOnLine(position, v1, v2);
+            const p = nearestOnLine(position, v1, v2);
 
-                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
+            const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
 
-                    const l = holdingObject.length;
+            const l = grabbingObject.length;
 
-                    const dx = Math.cos(theta) * l;
+            const dx = Math.cos(theta) * l;
 
-                    const dy = Math.sin(theta) * l;
+            const dy = Math.sin(theta) * l;
 
-                    const a1 = { x: p.x, y: p.y };
+            const a1 = { x: p.x, y: p.y };
 
-                    const a2 = { x: p.x + dx, y: p.y + dy };
+            const a2 = { x: p.x + dx, y: p.y + dy };
 
-                    if (
-                        !isNearFromLine(a1, v1, v2, 1) ||
-                        !isNearFromLine(a2, v1, v2, 1)
-                    ) {
-                        continue;
-                    }
+            if (
+                !isNearFromLine(a1, v1, v2, 1) ||
+                !isNearFromLine(a2, v1, v2, 1)
+            ) {
+                continue;
+            }
 
-                    refHoldingObject.current.next({
-                        ...holdingObject,
-                        position: undefined,
-                        anchor: {
-                            v1: a1,
-                            v2: a2,
-                        },
-                    });
+            const result = addVerticesToState(
+                i,
+                memory,
+                [a1, a2],
+                grabbingObject.id
+            );
 
-                    const next = addVerticesToState(
-                        i,
-                        memory,
-                        [a1, a2],
-                        "door"
-                    );
+            refState.current.next({
+                ...state,
+                vertices: result.vertices,
+                lines: result.lines,
+                grabbingObject: {
+                    ...grabbingObject,
+                    position: undefined,
+                },
+            });
 
-                    refState.current.next(next);
-
-                    return true;
-                }
-
-                refHoldingObject.current.next({
-                    ...holdingObject,
-                    position: position,
-                    anchor: undefined,
-                });
-
-                refState.current.next({
-                    ...state,
-                    vertices,
-                    lines,
-                });
-
-                break;
-            case "window":
-                for (let i = 0; i < lines.length; i++) {
-                    const [i1, i2] = lines[i].anchor;
-
-                    const v1 = vertices[i1];
-
-                    const v2 = vertices[i2];
-
-                    const r = (5 * option.spareScale) / BASE_SCALE_UNIT;
-
-                    if (!isNearFromLine(position, v1, v2, r)) {
-                        continue;
-                    }
-
-                    const p = nearestOnLine(position, v1, v2);
-
-                    const theta = Math.atan2(v2.y - v1.y, v2.x - v1.x);
-
-                    const l = holdingObject.length;
-
-                    const dx = Math.cos(theta) * l;
-
-                    const dy = Math.sin(theta) * l;
-
-                    const a1 = { x: p.x, y: p.y };
-
-                    const a2 = { x: p.x + dx, y: p.y + dy };
-
-                    if (
-                        !isNearFromLine(a1, v1, v2, 1) ||
-                        !isNearFromLine(a2, v1, v2, 1)
-                    ) {
-                        continue;
-                    }
-
-                    refHoldingObject.current.next({
-                        ...holdingObject,
-                        position: undefined,
-                        anchor: {
-                            v1: a1,
-                            v2: a2,
-                        },
-                    });
-
-                    const next = addVerticesToState(
-                        i,
-                        memory,
-                        [a1, a2],
-                        "window"
-                    );
-
-                    refState.current.next(next);
-
-                    return true;
-                }
-
-                refHoldingObject.current.next({
-                    ...holdingObject,
-                    position: position,
-                    anchor: undefined,
-                });
-
-                refState.current.next({
-                    ...state,
-                    vertices,
-                    lines,
-                });
+            return true;
         }
+
+        refState.current.next({
+            ...state,
+            vertices,
+            lines,
+            grabbingObject: {
+                ...grabbingObject,
+                position: position,
+            },
+        });
 
         return true;
     };
@@ -507,14 +289,18 @@ const Editor: FunctionComponent = () => {
         });
     };
 
-    const setHoldingObject = (obj?: HoldingObject) => {
-        refHoldingObject.current.next(obj);
+    const setHoldingObject = (grabbingObject?: GrabbingObject) => {
+        const state = refState.current.getValue();
+
+        refState.current.next({
+            ...state,
+            grabbingObject,
+        });
     };
 
     const value: EditorContextProps = {
-        state: refState.current,
-        memory: refMemory.current,
-        holdingObject: refHoldingObject.current,
+        stateSubject: refState.current,
+        memorySubject: refMemory.current,
         addVertices,
         moveVertex,
         removeVertex,

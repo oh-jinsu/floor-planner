@@ -1,4 +1,4 @@
-import { Vector2 } from "../Types/Vector";
+import { Vector2 } from "../../Types/Vector";
 
 export const join = (...classNames: any[]) => {
     return classNames.filter((element) => typeof element === "string").join(" ")

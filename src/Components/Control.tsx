@@ -8,10 +8,12 @@ import {
 } from "react";
 import { Vector2 } from "../Types/Vector";
 import { BASE_SCALE_UNIT } from "../Constants/Editor";
-import { distance, isNearFromLine, scale } from "../Functions/Math";
+import { scale } from "../Functions/Common/Math";
 import GestureDetector from "./GestureDetector";
 import { EditorContext } from "./Editor";
 import { ViewportContext } from "./Viewport";
+import { FindVertexIndexOnPosition } from "../Functions/Control/FindVertexIndexOnPosition";
+import { findLineIndexOnPosition } from "../Functions/Control/FindLineIndexOnPosition";
 
 type MouseState = {
     timestamp: number;
@@ -26,7 +28,7 @@ export type Props = {
 };
 
 const Control: FunctionComponent<Props> = ({ children }) => {
-    const { refViewport } = useContext(ViewportContext);
+    const { setCursor } = useContext(ViewportContext);
 
     const refMouseState = useRef<MouseState>({
         timestamp: 0,
@@ -36,8 +38,7 @@ const Control: FunctionComponent<Props> = ({ children }) => {
     });
 
     const {
-        state,
-        holdingObject,
+        stateSubject,
         moveObject,
         addVertices,
         moveVertex,
@@ -48,41 +49,30 @@ const Control: FunctionComponent<Props> = ({ children }) => {
     } = useContext(EditorContext);
 
     const scanVertices = (position: Vector2) => {
-        const { vertices, lines, option } = state.getValue();
+        const state = stateSubject.getValue();
 
-        const { handleRadius, wallLineWidth, spareScale } = option;
+        {
+            const i = FindVertexIndexOnPosition(state, position);
 
-        for (let i = 0; i < vertices.length; i++) {
-            const v = scale(BASE_SCALE_UNIT, vertices[i]);
-
-            if (distance(position, v) < handleRadius * spareScale) {
+            if (i !== undefined) {
                 refMouseState.current.holding = i;
 
-                refMouseState.current.origin = {
-                    x: vertices[i].x,
-                    y: vertices[i].y,
-                };
+                refMouseState.current.origin = state.vertices[i];
 
                 return;
             }
         }
 
-        for (let i = 0; i < lines.length; i++) {
-            const { type, anchor } = lines[i];
+        {
+            const i = findLineIndexOnPosition(state, position);
 
-            if (type !== "wall") {
-                continue;
-            }
-
-            const v1 = scale(BASE_SCALE_UNIT, vertices[anchor[0]]);
-
-            const v2 = scale(BASE_SCALE_UNIT, vertices[anchor[1]]);
-
-            if (isNearFromLine(position, v1, v2, wallLineWidth * spareScale)) {
-                refMouseState.current.holding = addVertices(
+            if (i !== undefined) {
+                const vertices = addVertices(
                     i,
                     scale(1 / BASE_SCALE_UNIT, position)
-                )[0];
+                );
+
+                refMouseState.current.holding = vertices[0];
 
                 refMouseState.current.updated = true;
 
@@ -92,19 +82,19 @@ const Control: FunctionComponent<Props> = ({ children }) => {
     };
 
     const onMouseMove = (position: Vector2) => {
-        const p = scale(1 / BASE_SCALE_UNIT, position);
+        const point = scale(1 / BASE_SCALE_UNIT, position);
 
-        const object = holdingObject.getValue();
+        const { grabbingObject } = stateSubject.getValue();
 
-        const { current: viewport } = refViewport;
+        if (grabbingObject) {
+            setCursor("none");
 
-        if (viewport) {
-            viewport.style.cursor = object ? "none" : "default";
+            moveObject(point);
+
+            return;
         }
 
-        if (object) {
-            moveObject(p);
-        }
+        setCursor("default");
 
         const { holding } = refMouseState.current;
 
@@ -112,7 +102,7 @@ const Control: FunctionComponent<Props> = ({ children }) => {
             return;
         }
 
-        const dst = moveVertex(holding, p);
+        const dst = moveVertex(holding, point);
 
         const { origin } = refMouseState.current;
 
@@ -136,7 +126,11 @@ const Control: FunctionComponent<Props> = ({ children }) => {
 
         refMouseState.current.holding = undefined;
 
-        if (holdingObject.getValue() !== undefined) {
+        const state = stateSubject.getValue();
+
+        const { grabbingObject, option } = state;
+
+        if (grabbingObject !== undefined) {
             capture();
 
             setHoldingObject();
@@ -150,30 +144,16 @@ const Control: FunctionComponent<Props> = ({ children }) => {
 
         const duration = Date.now() - refMouseState.current.timestamp;
 
-        const { vertices, option } = state.getValue();
-
-        const { handleRadius, spareScale, shortClickThreshold } = option;
-
-        if (duration > shortClickThreshold) {
+        if (duration > option.shortClickThreshold) {
             return;
         }
 
-        if (vertices.length <= 3) {
-            return;
-        }
+        const i = FindVertexIndexOnPosition(state, position);
 
-        for (let i = 0; i < vertices.length; i++) {
-            const v = scale(BASE_SCALE_UNIT, vertices[i]);
-
-            if (distance(position, v) > handleRadius * spareScale) {
-                continue;
-            }
-
+        if (i !== undefined) {
             removeVertex(i);
 
             capture();
-
-            return;
         }
     };
 
@@ -192,7 +172,7 @@ const Control: FunctionComponent<Props> = ({ children }) => {
         return () => {
             window.removeEventListener("keydown", onKeyboardDown);
         };
-    }, [onKeyboardDown, state]);
+    }, [onKeyboardDown, stateSubject]);
 
     return (
         <GestureDetector

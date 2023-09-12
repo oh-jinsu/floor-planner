@@ -5,11 +5,12 @@ import {
     MdOutlineWindow,
 } from "react-icons/md";
 import styles from "./Sidebar.module.css";
-import { join } from "../Functions/Element";
+import { join } from "../Functions/Common/Element";
 import { ReactNode, useContext, useState } from "react";
-import { EditorContext, HoldingObject } from "./Editor";
+import { EditorContext } from "./Editor";
+import { GrabbingObject } from "../Types/GrabbingObject";
 
-type HoldingObjectId = HoldingObject["id"];
+type HoldingObjectId = GrabbingObject["id"];
 
 export type SideBarState = {
     menus: {
