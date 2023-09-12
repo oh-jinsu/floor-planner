@@ -1,4 +1,4 @@
-import { Vector2 } from "../Types/Vector";
+import { Vector2 } from "../../Types/Vector";
 
 export const scale = (k: number, v: Vector2): Vector2 => {
     return {

@@ -5,11 +5,12 @@ import {
     MdOutlineWindow,
 } from "react-icons/md";
 import styles from "./Sidebar.module.css";
-import { join } from "../Functions/Element";
+import { join } from "../Functions/Common/Element";
 import { ReactNode, useContext, useState } from "react";
-import { EditorContext, HoldingObject } from "./Editor";
+import { EditorContext } from "./Editor";
+import { GrabbingObject } from "../Types/GrabbingObject";
 
-type HoldingObjectId = HoldingObject["id"];
+type HoldingObjectId = GrabbingObject["type"];
 
 export type SideBarState = {
     menus: {
@@ -75,14 +76,14 @@ const SideBar = () => {
         switch (id) {
             case "door":
                 setHoldingObject({
-                    id,
+                    type: id,
                     length: 1000,
                 });
 
                 break;
             case "window":
                 setHoldingObject({
-                    id,
+                    type: id,
                     length: 2000,
                 });
                 break;

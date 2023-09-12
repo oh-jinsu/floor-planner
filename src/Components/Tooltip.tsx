@@ -1,6 +1,6 @@
 import { FunctionComponent, ReactNode } from "react";
 import styles from "./Tooltip.module.css";
-import { join } from "../Functions/Element";
+import { join } from "../Functions/Common/Element";
 
 export type Props = {
     className?: string;

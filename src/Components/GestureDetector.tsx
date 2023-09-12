@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Vector2 } from "../Types/Vector";
 import { ViewportContext } from "./Viewport";
-import { getOffset } from "../Functions/Element";
+import { getOffset } from "../Functions/Common/Element";
 
 export type Props = {
     children?: ReactNode;

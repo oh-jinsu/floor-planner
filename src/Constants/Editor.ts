@@ -98,3 +98,20 @@ export const INITIAL_LINES: Line[] = [
         anchor: [7, 0],
     },
 ];
+
+export const INITIAL_STATE = {
+    option: {
+        snapping: true,
+        gridSpace: DEFAULT_GRID_SPACE,
+        handleRadius: DEFAULT_HANDLE_RADIUS,
+        spareScale: DEFAULT_SPARE_SCALE,
+        lineColor: DEFAULT_LINE_COLOR,
+        wallLineWidth: DEFAULT_WALL_LINE_WIDTH,
+        measureColor: DEFAULT_MEASURE_COLOR,
+        measureCalibartion: DEFAULT_MEASURE_CALIBRATION,
+        measureDistanceRatio: DEFAULT_MEASURE_DISTANCE_RATIO,
+        shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
+    },
+    vertices: INITIAL_VERTICES,
+    lines: INITIAL_LINES,
+};
