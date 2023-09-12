@@ -10,7 +10,7 @@ import { ReactNode, useContext, useState } from "react";
 import { EditorContext } from "./Editor";
 import { GrabbingObject } from "../Types/GrabbingObject";
 
-type HoldingObjectId = GrabbingObject["id"];
+type HoldingObjectId = GrabbingObject["type"];
 
 export type SideBarState = {
     menus: {
@@ -76,14 +76,14 @@ const SideBar = () => {
         switch (id) {
             case "door":
                 setHoldingObject({
-                    id,
+                    type: id,
                     length: 1000,
                 });
 
                 break;
             case "window":
                 setHoldingObject({
-                    id,
+                    type: id,
                     length: 2000,
                 });
                 break;

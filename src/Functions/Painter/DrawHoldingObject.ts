@@ -14,7 +14,7 @@ export const drawHoldingObject = (
         return;
     }
 
-    const { id, position, length } = grabbingObject;
+    const { type: id, position, length } = grabbingObject;
 
     if (!position) {
         return;

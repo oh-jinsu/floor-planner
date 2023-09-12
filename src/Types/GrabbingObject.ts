@@ -6,11 +6,11 @@ export type GrabbingObject = { position?: Vector2 } & (
 );
 
 export type GrabbingDoor = {
-    id: "door";
+    type: "door";
     length: number;
 };
 
 export type GrabbingWindow = {
-    id: "window";
+    type: "window";
     length: number;
 };

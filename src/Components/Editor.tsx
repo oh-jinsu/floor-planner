@@ -162,7 +162,7 @@ const Editor: FunctionComponent = () => {
                 i,
                 memory,
                 [a1, a2],
-                grabbingObject.id
+                grabbingObject.type
             );
 
             refState.current.next({
@@ -184,7 +184,7 @@ const Editor: FunctionComponent = () => {
             lines,
             grabbingObject: {
                 ...grabbingObject,
-                position: position,
+                position,
             },
         });
 
