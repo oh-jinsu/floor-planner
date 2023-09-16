@@ -1,3 +1,4 @@
+import { EditorState } from "../Types/EditorState";
 import { Line } from "../Types/Line";
 import { Vector2 } from "../Types/Vector";
 
@@ -29,7 +30,9 @@ export const DEFAULT_WALL_LINE_WIDTH = 9.5;
 
 export const DEFAULT_SHORT_CLICK_THRESHOLD = 200;
 
-export const INITIAL_VERTICES: Vector2[] = [
+export const DEFAULT_LEVEL = 2500;
+
+export const DEFAULT_VERTICES: Vector2[] = [
     {
         x: -5000,
         y: -3000,
@@ -64,7 +67,7 @@ export const INITIAL_VERTICES: Vector2[] = [
     },
 ];
 
-export const INITIAL_LINES: Line[] = [
+export const DEFAULT_LINES: Line[] = [
     {
         type: "wall",
         anchor: [0, 1],
@@ -99,7 +102,10 @@ export const INITIAL_LINES: Line[] = [
     },
 ];
 
-export const INITIAL_STATE = {
+export const DEFAULT_STATE: EditorState = {
+    level: DEFAULT_LEVEL,
+    vertices: DEFAULT_VERTICES,
+    lines: DEFAULT_LINES,
     option: {
         snapping: true,
         gridSpace: DEFAULT_GRID_SPACE,
@@ -112,6 +118,4 @@ export const INITIAL_STATE = {
         measureDistanceRatio: DEFAULT_MEASURE_DISTANCE_RATIO,
         shortClickThreshold: DEFAULT_SHORT_CLICK_THRESHOLD,
     },
-    vertices: INITIAL_VERTICES,
-    lines: INITIAL_LINES,
 };
