@@ -6,7 +6,7 @@ import Painter from "./Painter";
 import { createContext } from "react";
 import { Vector2 } from "../Types/Vector";
 import { clone } from "../Functions/Common/Object";
-import { BASE_SCALE_UNIT, INITIAL_STATE } from "../Constants/Editor";
+import { BASE_SCALE_UNIT, DEFAULT_STATE } from "../Constants/Editor";
 import { currentValue } from "../Functions/Common/React";
 import { arrayBufferToString } from "../Functions/Common/Buffer";
 import Viewport from "./Viewport";
@@ -40,7 +40,7 @@ export type EditorContextProps = {
 export const EditorContext = createContext<EditorContextProps>({} as any);
 
 const Editor: FunctionComponent = () => {
-    const refState = useRef(new BehaviorSubject<EditorState>(INITIAL_STATE));
+    const refState = useRef(new BehaviorSubject<EditorState>(DEFAULT_STATE));
 
     const refMemory = useRef(
         new BehaviorSubject<EditorState[]>([clone(currentValue(refState))])
